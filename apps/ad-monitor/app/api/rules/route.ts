@@ -14,6 +14,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const body = await req.json()
 
+  if (!body.name || typeof body.name !== "string" || !body.name.trim()) return NextResponse.json({ error: "name required" }, { status: 400 })
   if (!VALID_METRICS.has(body.metric)) return NextResponse.json({ error: "Invalid metric" }, { status: 400 })
   if (!VALID_OPS.has(body.operator)) return NextResponse.json({ error: "Invalid operator" }, { status: 400 })
   if (!VALID_ACTIONS.has(body.action)) return NextResponse.json({ error: "Invalid action" }, { status: 400 })

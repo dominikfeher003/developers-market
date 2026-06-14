@@ -4,7 +4,8 @@ import { fetchCampaignInsights } from "@/lib/meta-api"
 
 export async function GET(req: NextRequest) {
   const campaignId = req.nextUrl.searchParams.get("campaignId")
-  const days = parseInt(req.nextUrl.searchParams.get("days") ?? "7")
+  const rawDays = parseInt(req.nextUrl.searchParams.get("days") ?? "7")
+  const days = Number.isFinite(rawDays) ? Math.min(Math.max(1, rawDays), 90) : 7
   const clientId = req.nextUrl.searchParams.get("clientId")
 
   if (!campaignId) {

@@ -97,7 +97,7 @@ export async function readSettings(): Promise<Settings> {
   const defaults = DEFAULTS["settings.json"] as Settings
   const saved = await readJSON<Partial<Settings>>("settings.json")
   const clean = Object.fromEntries(
-    Object.entries(saved).filter(([, v]) => v !== undefined && v !== null)
+    Object.entries(saved).filter(([, v]) => v !== undefined)
   ) as Partial<Settings>
   return { ...defaults, ...clean }
 }

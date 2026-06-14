@@ -1,34 +1,61 @@
 import { getUserClient } from "@/lib/get-user-client"
 import { redirect } from "next/navigation"
 import { readAlerts, readRules } from "@/lib/storage"
-import { AlertItem } from "@/components/notifications/AlertItem"
+import { timeAgo } from "@/lib/utils"
+import { EmptyState } from "@/components/ui/empty-state"
+import { Bell, PauseCircle, RotateCcw, TrendingUp, Zap } from "lucide-react"
+
+const ACTION_META = {
+  pause: { label: "Campaign Paused", icon: PauseCircle, color: "bg-red-500", border: "border-l-red-400" },
+  resume: { label: "Campaign Resumed", icon: RotateCcw, color: "bg-emerald-500", border: "border-l-emerald-400" },
+  scale_budget: { label: "Budget Scaled", icon: TrendingUp, color: "bg-blue-500", border: "border-l-blue-400" },
+  notify_only: { label: "Alert Triggered", icon: Zap, color: "bg-indigo-500", border: "border-l-indigo-400" },
+} as const
 
 export default async function NotificationsPage() {
   const client = await getUserClient()
   if (!client) redirect("/dashboard")
 
   const [allAlerts, allRules] = await Promise.all([readAlerts(), readRules()])
-  const clientRuleIds = new Set(allRules.filter((r) => r.clientId === client.id).map((r) => r.id))
-  const alerts = allAlerts.filter((a) => clientRuleIds.has(a.ruleId)).slice(0, 100)
+  const alerts = allAlerts
+    .filter((a) => allRules.some((r) => r.id === a.ruleId && r.clientId === client.id))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 100)
 
   return (
-    <div className="p-4 md:p-6">
-      <p className="text-sm text-zinc-500 mb-6">
-        {alerts.length} notification{alerts.length !== 1 ? "s" : ""} from your automation rules.
-      </p>
+    <div className="space-y-6 max-w-3xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Notifications</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{alerts.length} alert{alerts.length !== 1 ? "s" : ""} from your automation rules</p>
+        </div>
+      </div>
 
       {alerts.length === 0 ? (
-        <div className="text-center py-24 text-zinc-400 border-2 border-dashed border-zinc-200 rounded-xl">
-          <p className="font-medium">No notifications yet</p>
-          <p className="text-sm mt-1">Notifications appear here when your automation rules take action.</p>
-        </div>
+        <EmptyState icon={Bell} title="No notifications yet" description="Alerts from your automation rules will appear here." />
       ) : (
-        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm divide-y divide-zinc-100">
-          {alerts.map((a) => (
-            <div key={a.id} className="px-5">
-              <AlertItem alert={a} />
-            </div>
-          ))}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          {alerts.map((a, idx) => {
+            const meta = ACTION_META[a.action] ?? ACTION_META.notify_only
+            const Icon = meta.icon
+            return (
+              <div key={a.id} className={`flex items-start gap-4 px-5 py-4 border-l-2 ${meta.border} ${idx > 0 ? "border-t border-t-border" : ""} hover:bg-muted/30 transition-colors`}>
+                <div className={`w-7 h-7 rounded-full ${meta.color}/15 flex items-center justify-center shrink-0 mt-0.5`}>
+                  <Icon className={`h-3.5 w-3.5 ${meta.color.replace("bg-", "text-")}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-sm font-medium text-foreground">{meta.label}</p>
+                    <span className="text-xs text-muted-foreground shrink-0">{timeAgo(a.timestamp)}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-0.5 truncate">{a.campaignName}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Rule: {a.ruleName} · {a.metricName}: {a.metricValue.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
