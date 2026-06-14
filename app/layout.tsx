@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Nav } from "@/components/Nav"
 import { Footer } from "@/components/Footer"
+import { LanguageProvider } from "@/lib/i18n/context"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -14,10 +15,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-[#08080a] text-zinc-100 antialiased`}>
-        <Nav />
-        <main>{children}</main>
-        <Footer />
+      <body className={`${inter.className} bg-[#08080a] text-zinc-100 antialiased overflow-x-hidden`}>
+        <LanguageProvider>
+          <Nav />
+          <main>{children}</main>
+          <Footer />
+        </LanguageProvider>
       </body>
     </html>
   )

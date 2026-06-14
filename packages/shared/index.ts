@@ -34,6 +34,7 @@ export interface Campaign {
   name: string
   status: CampaignStatus
   daily_budget: number | null
+  platform?: "meta" | "tiktok"
   insights: {
     last7d: Omit<DailyInsight, "date">
     dailySeries: DailyInsight[]
@@ -45,6 +46,8 @@ export interface Client {
   name: string
   metaAdAccountId: string
   metaAccessToken: string
+  tiktokAdAccountId?: string
+  tiktokAccessToken?: string
   enabled: boolean
   createdAt: string
   userEmail?: string

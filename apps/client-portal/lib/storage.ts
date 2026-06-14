@@ -1,57 +1,73 @@
 import { Client, Rule, Alert } from "./types"
+import {
+  getDb,
+  clients as clientsTable,
+  rules as rulesTable,
+  alerts as alertsTable,
+  asc,
+  desc,
+} from "@dm/db"
 
-const DEFAULTS: Record<string, unknown> = {
-  "clients.json": [],
-  "rules.json": [],
-  "alerts.json": [],
-}
-
-async function blobRead<T>(filename: string): Promise<T> {
-  const { list } = await import("@vercel/blob")
-  const { blobs } = await list({
-    prefix: `admonitor/${filename}`,
-    token: process.env.BLOB_READ_WRITE_TOKEN!,
-  })
-  const blob = blobs[0]
-  if (!blob) return (DEFAULTS[filename] ?? []) as T
-  const res = await fetch(blob.url, {
-    headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
-    cache: "no-store",
-    signal: AbortSignal.timeout(5000),
-  })
-  if (!res.ok) return (DEFAULTS[filename] ?? []) as T
-  return (await res.json()) as T
-}
-
-async function fileRead<T>(filename: string): Promise<T> {
-  const fs = await import("fs/promises")
-  const path = await import("path")
-  const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data")
-  const filePath = path.join(DATA_DIR, filename)
-  try {
-    const content = await fs.readFile(filePath, "utf8")
-    return JSON.parse(content) as T
-  } catch {
-    return (DEFAULTS[filename] ?? []) as T
+function rowToClient(r: typeof clientsTable.$inferSelect): Client {
+  return {
+    id: r.id,
+    name: r.name,
+    metaAdAccountId: r.metaAdAccountId,
+    metaAccessToken: r.metaAccessToken,
+    tiktokAdAccountId: r.tiktokAdAccountId ?? undefined,
+    tiktokAccessToken: r.tiktokAccessToken ?? undefined,
+    googleAdsCustomerId: r.googleAdsCustomerId ?? undefined,
+    googleAdsRefreshToken: r.googleAdsRefreshToken ?? undefined,
+    userEmail: r.userEmail ?? undefined,
+    enabled: r.enabled,
+    createdAt: r.createdAt.toISOString(),
   }
 }
 
-function useBlob(): boolean {
-  return !!process.env.BLOB_READ_WRITE_TOKEN && !process.env.DATA_DIR
-}
-
-async function readJSON<T>(filename: string): Promise<T> {
-  return useBlob() ? blobRead<T>(filename) : fileRead<T>(filename)
-}
-
 export async function readClients(): Promise<Client[]> {
-  return readJSON<Client[]>("clients.json")
+  const rows = await getDb().select().from(clientsTable).orderBy(asc(clientsTable.createdAt))
+  return rows.map(rowToClient)
 }
 
 export async function readRules(): Promise<Rule[]> {
-  return readJSON<Rule[]>("rules.json")
+  const rows = await getDb().select().from(rulesTable).orderBy(asc(rulesTable.createdAt))
+  return rows.map((r) => ({
+    id: r.id,
+    clientId: r.clientId,
+    name: r.name,
+    metric: r.metric as Rule["metric"],
+    operator: r.operator as Rule["operator"],
+    threshold: r.threshold,
+    windowDays: r.windowDays,
+    appliesTo: r.appliesTo as Rule["appliesTo"],
+    campaignIds: r.campaignIds ?? [],
+    action: r.action as Rule["action"],
+    actionValue: r.actionValue ?? null,
+    enabled: r.enabled,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }))
 }
 
 export async function readAlerts(): Promise<Alert[]> {
-  return readJSON<Alert[]>("alerts.json")
+  const rows = await getDb()
+    .select()
+    .from(alertsTable)
+    .orderBy(desc(alertsTable.timestamp))
+    .limit(1000)
+  return rows.map((r) => ({
+    id: r.id,
+    timestamp: r.timestamp.toISOString(),
+    ruleId: r.ruleId,
+    ruleName: r.ruleName,
+    campaignId: r.campaignId,
+    campaignName: r.campaignName,
+    action: r.action as Alert["action"],
+    actionValue: r.actionValue ?? null,
+    metricValue: r.metricValue,
+    metricName: r.metricName as Alert["metricName"],
+    status: r.status as Alert["status"],
+    errorMessage: r.errorMessage ?? null,
+    agentRunId: r.agentRunId,
+  }))
 }

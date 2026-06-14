@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
   const force = req.nextUrl.searchParams.get("force") === "1"
   const clientId = req.nextUrl.searchParams.get("clientId")
 
-  const cacheKey = clientId ? `cache-${clientId}.json` : "cache.json"
-  const cache = await readJSON<CacheData>(cacheKey)
+  const cacheKey = clientId ? `cache-${clientId}` : "cache"
+  const cache = (await readJSON<CacheData>(cacheKey)) ?? { fetchedAt: null, campaigns: [] }
 
   const age = cache.fetchedAt ? Date.now() - new Date(cache.fetchedAt).getTime() : Infinity
   if (!force && age < CACHE_TTL_MS && cache.campaigns.length > 0) {
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
 
     const campaigns = [...metaCampaigns, ...tiktokCampaigns]
     const fetchedAt = new Date().toISOString()
-    await writeJSON(cacheKey, { fetchedAt, campaigns })
+    await writeJSON(cacheKey, { fetchedAt, campaigns }).catch(() => {})
     return NextResponse.json({ campaigns, fetchedAt, fromCache: false })
   } catch (err) {
     const isDev = process.env.NODE_ENV === "development"

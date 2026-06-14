@@ -22,7 +22,9 @@ import {
   updateTikTokDailyBudget,
 } from "./tiktok-api"
 import { sendAlertEmail } from "./email"
+import { sendSlackAlert } from "./slack"
 import { Alert, Campaign, DailyInsight, MetricKey, Rule } from "./types"
+import { getDb, campaignSnapshots } from "@dm/db"
 
 interface CacheData {
   fetchedAt: string | null
@@ -172,7 +174,7 @@ export async function runAgent(): Promise<{
 
   for (const target of targets) {
     const { metaAccountId, metaToken, tiktokAccountId, tiktokToken, clientId, label } = target
-    const cacheKey = clientId ? `cache-${clientId}.json` : "cache.json"
+    const cacheKey = clientId ? `cache-${clientId}` : "cache"
     const rules = allRules.filter((r) => (r.clientId ?? null) === clientId)
 
     log.push(`\n=== ${label} (${rules.length} rule(s)) ===`)
@@ -196,7 +198,8 @@ export async function runAgent(): Promise<{
       continue
     }
 
-    // Fetch insights per campaign
+    // Fetch insights per campaign + write daily snapshots
+    const today = new Date().toISOString().slice(0, 10)
     for (const campaign of campaigns) {
       try {
         const isTikTok = campaign.platform === "tiktok"
@@ -209,6 +212,26 @@ export async function runAgent(): Promise<{
           campaign.insights.last7d = aggregateInsights(series)
         }
         log.push(`"${campaign.name}" [${isTikTok ? "TikTok" : "Meta"}] — ${series.length} days, avg ROAS ${campaign.insights.last7d.purchase_roas.toFixed(2)}`)
+
+        // Write daily snapshot for budget pacing + reports
+        if (clientId) {
+          try {
+            await getDb()
+              .insert(campaignSnapshots)
+              .values({
+                campaignId: campaign.id,
+                clientId,
+                platform: campaign.platform ?? "meta",
+                date: today,
+                spend: campaign.insights.last7d.spend,
+                impressions: campaign.insights.last7d.impressions,
+                clicks: campaign.insights.last7d.clicks,
+                roas: campaign.insights.last7d.purchase_roas,
+                dailyBudget: campaign.daily_budget ?? 0,
+              })
+              .onConflictDoNothing()
+          } catch { /* non-fatal */ }
+        }
       } catch (err) {
         errors.push(`[${label}] Insights failed for ${campaign.name}: ${err}`)
         log.push(`"${campaign.name}" — insights fetch failed: ${err}`)
@@ -296,6 +319,11 @@ export async function runAgent(): Promise<{
 
   if (firedAlerts.length > 0) {
     await sendAlertEmail(firedAlerts, settings)
+    if (settings.slackWebhookUrl) {
+      await sendSlackAlert(firedAlerts, settings.slackWebhookUrl).catch((e) =>
+        errors.push(`Slack alert failed: ${e}`)
+      )
+    }
   }
 
   await writeSettings({ lastAgentRun: new Date().toISOString() })

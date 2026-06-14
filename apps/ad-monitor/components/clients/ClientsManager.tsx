@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Pencil, Trash2, Loader2, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Pencil, Trash2, Loader2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Users, X } from "lucide-react"
 import { Client } from "@/lib/types"
 
-type MaskedClient = Omit<Client, "metaAccessToken" | "tiktokAccessToken"> & {
+type MaskedClient = Omit<Client, "metaAccessToken" | "tiktokAccessToken" | "googleAdsRefreshToken"> & {
   metaAccessToken: string
   tiktokAccessToken?: string
+  googleAdsRefreshToken?: string
 }
 
 interface FormState {
@@ -20,11 +21,21 @@ interface FormState {
   userEmail: string
   tiktokAdAccountId: string
   tiktokAccessToken: string
+  googleAdsCustomerId: string
+  googleAdsRefreshToken: string
 }
 
 const EMPTY_FORM: FormState = {
   name: "", metaAdAccountId: "", metaAccessToken: "", userEmail: "",
   tiktokAdAccountId: "", tiktokAccessToken: "",
+  googleAdsCustomerId: "", googleAdsRefreshToken: "",
+}
+
+interface ClientUser {
+  id: number
+  userEmail: string
+  role: string
+  invitedAt: string
 }
 
 export function ClientsManager() {
@@ -32,7 +43,13 @@ export function ClientsManager() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showTikTok, setShowTikTok] = useState(false)
+  const [showGoogle, setShowGoogle] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [expandedUsers, setExpandedUsers] = useState<string | null>(null)
+  const [clientUsers, setClientUsers] = useState<Record<string, ClientUser[]>>({})
+  const [addUserEmail, setAddUserEmail] = useState("")
+  const [addUserRole, setAddUserRole] = useState<"viewer" | "admin">("viewer")
+  const [addingUser, setAddingUser] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -49,10 +66,39 @@ export function ClientsManager() {
 
   useEffect(() => { load() }, [load])
 
+  async function loadUsers(clientId: string) {
+    const res = await fetch(`/api/clients/${clientId}/users`)
+    const data = await res.json()
+    setClientUsers((prev) => ({ ...prev, [clientId]: data.users ?? [] }))
+  }
+
+  async function addUser(clientId: string) {
+    if (!addUserEmail.trim()) return
+    setAddingUser(true)
+    await fetch(`/api/clients/${clientId}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: addUserEmail.trim(), role: addUserRole }),
+    })
+    setAddUserEmail("")
+    await loadUsers(clientId)
+    setAddingUser(false)
+  }
+
+  async function removeUser(clientId: string, email: string) {
+    await fetch(`/api/clients/${clientId}/users`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+    await loadUsers(clientId)
+  }
+
   function startAdd() {
     setEditingId(null)
     setForm(EMPTY_FORM)
     setShowTikTok(false)
+    setShowGoogle(false)
     setShowForm(true)
   }
 
@@ -65,8 +111,11 @@ export function ClientsManager() {
       userEmail: client.userEmail ?? "",
       tiktokAdAccountId: client.tiktokAdAccountId ?? "",
       tiktokAccessToken: "",
+      googleAdsCustomerId: client.googleAdsCustomerId ?? "",
+      googleAdsRefreshToken: "",
     })
     setShowTikTok(!!(client.tiktokAdAccountId))
+    setShowGoogle(!!(client.googleAdsCustomerId))
     setShowForm(true)
   }
 
@@ -75,6 +124,7 @@ export function ClientsManager() {
     setEditingId(null)
     setForm(EMPTY_FORM)
     setShowTikTok(false)
+    setShowGoogle(false)
   }
 
   async function save() {
@@ -84,6 +134,8 @@ export function ClientsManager() {
         ...form,
         tiktokAdAccountId: form.tiktokAdAccountId.trim() || undefined,
         tiktokAccessToken: form.tiktokAccessToken.trim() || undefined,
+        googleAdsCustomerId: form.googleAdsCustomerId.trim() || undefined,
+        googleAdsRefreshToken: form.googleAdsRefreshToken.trim() || undefined,
       }
       const res = editingId
         ? await fetch(`/api/clients/${editingId}`, {
@@ -226,6 +278,39 @@ export function ClientsManager() {
                 </div>
               </div>
             )}
+
+            {/* Google Ads section toggle */}
+            <button
+              type="button"
+              onClick={() => setShowGoogle((v) => !v)}
+              className="flex items-center gap-2 text-xs font-semibold text-zinc-500 uppercase tracking-wide pt-1 hover:text-zinc-700 transition-colors"
+            >
+              {showGoogle ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              Google Ads <span className="font-normal normal-case text-zinc-400">(optional — requires Developer Token)</span>
+            </button>
+
+            {showGoogle && (
+              <div className="space-y-3 pl-3 border-l-2 border-zinc-100">
+                <div className="space-y-1">
+                  <Label>Customer ID</Label>
+                  <Input
+                    value={form.googleAdsCustomerId}
+                    onChange={(e) => setForm((f) => ({ ...f, googleAdsCustomerId: e.target.value }))}
+                    placeholder="123-456-7890"
+                  />
+                  <p className="text-xs text-zinc-400">Found in the top-right of Google Ads (without dashes)</p>
+                </div>
+                <div className="space-y-1">
+                  <Label>{editingId ? "Refresh Token (leave blank to keep current)" : "Refresh Token"}</Label>
+                  <Input
+                    type="password"
+                    value={form.googleAdsRefreshToken}
+                    onChange={(e) => setForm((f) => ({ ...f, googleAdsRefreshToken: e.target.value }))}
+                    placeholder={editingId ? "Leave blank to keep existing" : "Generated via OAuth Playground"}
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={cancelForm}>Cancel</Button>
@@ -249,7 +334,8 @@ export function ClientsManager() {
       ) : (
         <div className="space-y-3">
           {clients.map((client) => (
-            <div key={client.id} className="border rounded-lg p-4 bg-white flex items-start gap-4">
+            <div key={client.id} className="border rounded-lg p-4 bg-white">
+              <div className="flex items-start gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium text-sm">{client.name}</p>
@@ -271,6 +357,11 @@ export function ClientsManager() {
                   {client.tiktokAdAccountId && (
                     <span className="inline-flex items-center gap-1 text-xs bg-black text-white px-1.5 py-0.5 rounded font-medium">
                       TikTok
+                    </span>
+                  )}
+                  {client.googleAdsCustomerId && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-green-600 text-white px-1.5 py-0.5 rounded font-medium">
+                      Google Ads
                     </span>
                   )}
                   <span className="text-xs text-zinc-400">{client.metaAdAccountId}</span>
@@ -298,6 +389,22 @@ export function ClientsManager() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="h-8 w-8 text-zinc-500"
+                  title="Manage users"
+                  onClick={() => {
+                    if (expandedUsers === client.id) {
+                      setExpandedUsers(null)
+                    } else {
+                      setExpandedUsers(client.id)
+                      loadUsers(client.id)
+                    }
+                  }}
+                >
+                  <Users className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-8 w-8"
                   onClick={() => startEdit(client)}
                 >
@@ -313,6 +420,51 @@ export function ClientsManager() {
                   {deletingId === client.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                 </Button>
               </div>
+              </div>
+
+            {/* Users panel */}
+            {expandedUsers === client.id && (
+              <div className="mt-3 pt-3 border-t border-zinc-100 space-y-2">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Portal Users</p>
+                {(clientUsers[client.id] ?? []).length === 0 ? (
+                  <p className="text-xs text-zinc-400">No users linked yet. Add a user below to grant portal access.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {(clientUsers[client.id] ?? []).map((u) => (
+                      <div key={u.id} className="flex items-center justify-between text-xs py-1">
+                        <div>
+                          <span className="font-medium text-zinc-700">{u.userEmail}</span>
+                          <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold ${u.role === "admin" ? "bg-indigo-50 text-indigo-700" : "bg-zinc-100 text-zinc-500"}`}>{u.role}</span>
+                        </div>
+                        <button onClick={() => removeUser(client.id, u.userEmail)} className="text-red-400 hover:text-red-600 ml-2">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 items-center pt-1">
+                  <Input
+                    value={addUserEmail}
+                    onChange={(e) => setAddUserEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    className="h-7 text-xs flex-1"
+                    onKeyDown={(e) => e.key === "Enter" && addUser(client.id)}
+                  />
+                  <select
+                    value={addUserRole}
+                    onChange={(e) => setAddUserRole(e.target.value as "viewer" | "admin")}
+                    className="h-7 text-xs border border-zinc-200 rounded px-1.5 bg-white"
+                  >
+                    <option value="viewer">Viewer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <Button size="sm" className="h-7 text-xs px-2" onClick={() => addUser(client.id)} disabled={addingUser || !addUserEmail.trim()}>
+                    {addingUser ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+                  </Button>
+                </div>
+              </div>
+            )}
             </div>
           ))}
         </div>

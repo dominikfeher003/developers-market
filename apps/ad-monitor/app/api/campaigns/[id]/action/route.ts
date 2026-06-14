@@ -41,16 +41,16 @@ export async function POST(
     metaToken = client.metaAccessToken
     tiktokToken = client.tiktokAccessToken
     tiktokAccountId = client.tiktokAdAccountId
-    cacheKey = `cache-${clientId}.json`
+    cacheKey = `cache-${clientId}`
   } else {
     const settings = await readSettings()
     if (!settings.metaAccessToken) return NextResponse.json({ error: "Not configured" }, { status: 400 })
     metaToken = settings.metaAccessToken
-    cacheKey = "cache.json"
+    cacheKey = "cache"
   }
 
   // Detect platform from cache
-  const cache = await readJSON<CacheData>(cacheKey)
+  const cache = (await readJSON<CacheData>(cacheKey)) ?? { fetchedAt: null, campaigns: [] }
   const cached = cache.campaigns?.find((c) => c.id === id)
   const isTikTok = cached?.platform === "tiktok"
 

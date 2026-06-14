@@ -47,6 +47,8 @@ export interface Client {
   metaAccessToken: string
   tiktokAdAccountId?: string
   tiktokAccessToken?: string
+  googleAdsCustomerId?: string
+  googleAdsRefreshToken?: string
   enabled: boolean
   createdAt: string
   userEmail?: string

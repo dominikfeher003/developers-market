@@ -5,10 +5,12 @@ import { readAlerts, readRules } from "@/lib/storage"
 import { StatsGrid } from "@/components/dashboard/StatsGrid"
 import { SpendChart } from "@/components/dashboard/SpendChart"
 import { CampaignMiniList } from "@/components/dashboard/CampaignMiniList"
+import { BudgetPacing } from "@/components/dashboard/BudgetPacing"
 import { Greeting } from "@/components/dashboard/Greeting"
 import { DailyInsight } from "@/lib/types"
 import { timeAgo } from "@/lib/utils"
 import { Zap, TrendingUp, PauseCircle, RotateCcw } from "lucide-react"
+import { getDb, campaignSnapshots, eq, gte } from "@dm/db"
 
 const ACTION_ICONS = {
   pause: PauseCircle,
@@ -28,12 +30,38 @@ export default async function DashboardPage() {
   const client = await getUserClient()
   if (!client) redirect("/")
 
-  const [campaigns, accountInfo, allAlerts, allRules] = await Promise.all([
+  // Budget pacing: query this month's snapshots
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const dayOfMonth = now.getDate()
+
+  const [campaigns, accountInfo, allAlerts, allRules, monthlySnaps] = await Promise.all([
     fetchCampaigns(client.metaAdAccountId, client.metaAccessToken).catch(() => []),
     fetchAccountInfo(client.metaAdAccountId, client.metaAccessToken),
     readAlerts(),
     readRules(),
+    getDb()
+      .select({ date: campaignSnapshots.date, spend: campaignSnapshots.spend, dailyBudget: campaignSnapshots.dailyBudget })
+      .from(campaignSnapshots)
+      .where(eq(campaignSnapshots.clientId, client.id))
+      .then((rows) => rows.filter((r) => r.date >= firstOfMonth))
+      .catch(() => [] as { date: string; spend: number; dailyBudget: number }[]),
   ])
+
+  // Aggregate daily spend for this month
+  const dailySpendMap: Record<string, number> = {}
+  for (const s of monthlySnaps) {
+    dailySpendMap[s.date] = (dailySpendMap[s.date] ?? 0) + s.spend
+  }
+  // Estimate monthly budget: most recent day's total daily budget × days in month
+  const latestDate = monthlySnaps.reduce((max, s) => (s.date > max ? s.date : max), "")
+  const latestDayBudget = monthlySnaps.filter((s) => s.date === latestDate).reduce((sum, s) => sum + s.dailyBudget, 0)
+  const estimatedMonthlyBudget = latestDayBudget * daysInMonth
+
+  const dailySpend = Object.entries(dailySpendMap)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, spend]) => ({ date, spend }))
 
   const insightsResults = await Promise.allSettled(
     campaigns.map((c) => fetchCampaignInsights(c.id, client.metaAccessToken, 30))
@@ -104,6 +132,13 @@ export default async function DashboardPage() {
       <StatsGrid campaigns={campaignsWithInsights} accountInfo={accountInfo} metricSeries={metricSeries} />
 
       {chartData.length > 0 && <SpendChart data={chartData} />}
+
+      <BudgetPacing
+        dailySpend={dailySpend}
+        estimatedMonthlyBudget={estimatedMonthlyBudget}
+        daysInMonth={daysInMonth}
+        dayOfMonth={dayOfMonth}
+      />
 
       <div className="grid lg:grid-cols-2 gap-6">
         <CampaignMiniList campaigns={campaignsWithInsights} />

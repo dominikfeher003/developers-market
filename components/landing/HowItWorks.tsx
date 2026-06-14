@@ -1,36 +1,27 @@
-const steps = [
-  {
-    number: "01",
-    title: "Free Audit",
-    description: "We review your current ads, landing pages, and tracking setup. We'll show you exactly what's costing you ROAS — no fluff, no upsell pressure.",
-  },
-  {
-    number: "02",
-    title: "We Launch",
-    description: "We restructure your campaigns, write new creatives, install proper tracking, and go live within 5 business days. You approve everything before it runs.",
-  },
-  {
-    number: "03",
-    title: "We Scale",
-    description: "Our AI agent monitors every campaign every morning. It pauses underperformers, scales winners, and alerts you when action is needed — automatically.",
-  },
-]
+"use client"
+
+import { FadeIn } from "@/components/ui/FadeIn"
+import { useI18n } from "@/lib/i18n/context"
 
 export function HowItWorks() {
+  const { t } = useI18n()
+  const numbers = ["01", "02", "03"]
   return (
-    <section className="py-24 bg-white/[0.01] border-y border-white/5">
+    <section className="py-16 md:py-24 bg-[#0a0a0f] border-y border-white/[0.04]">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <p className="text-indigo-400 text-sm font-semibold uppercase tracking-widest mb-3">The process</p>
-          <h2 className="text-4xl md:text-5xl font-extrabold text-white">Simple. Fast. Results.</h2>
-        </div>
-        <div className="grid md:grid-cols-3 gap-8">
-          {steps.map(({ number, title, description }) => (
-            <div key={number} className="relative">
-              <div className="text-6xl font-black text-white/5 mb-4 leading-none">{number}</div>
-              <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
-              <p className="text-zinc-400 leading-relaxed">{description}</p>
-            </div>
+        <FadeIn className="text-center mb-10 md:mb-16">
+          <p className="text-indigo-400 text-sm font-semibold uppercase tracking-widest mb-3">{t.howItWorks.eyebrow}</p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">{t.howItWorks.heading}</h2>
+        </FadeIn>
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+          {t.howItWorks.steps.map(({ title, description }, i) => (
+            <FadeIn key={title} delay={i * 0.15}>
+              <div className="relative group">
+                <div className="text-6xl md:text-7xl font-black text-indigo-500/15 mb-4 leading-none group-hover:text-indigo-500/25 transition-colors duration-300">{numbers[i]}</div>
+                <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
+                <p className="text-zinc-400 leading-relaxed">{description}</p>
+              </div>
+            </FadeIn>
           ))}
         </div>
       </div>

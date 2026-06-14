@@ -1,6 +1,7 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["@dm/db"],
   async headers() {
     return [
       {

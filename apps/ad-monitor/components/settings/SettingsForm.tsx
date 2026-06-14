@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Loader2, Play, StopCircle, CheckCircle2, XCircle } from "lucide-react"
+import { Eye, EyeOff, Loader2, Play, StopCircle, CheckCircle2, XCircle, Send } from "lucide-react"
 
 interface SettingsData {
   metaAdAccountId: string
@@ -17,6 +17,7 @@ interface SettingsData {
   smtpPass: string
   imapHost: string
   imapPort: number
+  slackWebhookUrl: string
   lastAgentRun: string | null
   agentEnabled: boolean
 }
@@ -26,6 +27,7 @@ export function SettingsForm() {
     metaAdAccountId: "", metaAccessToken: "", notificationEmail: "",
     smtpHost: "smtp.gmail.com", smtpPort: 587, smtpUser: "", smtpPass: "",
     imapHost: "mail.privateemail.com", imapPort: 993,
+    slackWebhookUrl: "",
     lastAgentRun: null, agentEnabled: true,
   })
   const [showToken, setShowToken] = useState(false)
@@ -37,6 +39,10 @@ export function SettingsForm() {
   const [imapResult, setImapResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [testingPlaces, setTestingPlaces] = useState(false)
   const [placesResult, setPlacesResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [testingSlack, setTestingSlack] = useState(false)
+  const [slackResult, setSlackResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [sendingReport, setSendingReport] = useState(false)
+  const [reportResult, setReportResult] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   const [runResult, setRunResult] = useState<string | null>(null)
   const [runLog, setRunLog] = useState<string[]>([])
@@ -94,6 +100,30 @@ export function SettingsForm() {
     const data = await res.json()
     setTestingImap(false)
     setImapResult({ ok: data.ok, msg: data.msg })
+  }
+
+  async function testSlack() {
+    setTestingSlack(true)
+    setSlackResult(null)
+    await save()
+    const res = await fetch("/api/settings/test-slack", { method: "POST" })
+    const data = await res.json()
+    setTestingSlack(false)
+    setSlackResult({ ok: data.ok, msg: data.msg })
+  }
+
+  async function sendTestReport() {
+    setSendingReport(true)
+    setReportResult(null)
+    const res = await fetch("/api/report/send?preview=1", { method: "POST" })
+    const data = await res.json()
+    setSendingReport(false)
+    if (data.ok) {
+      const r = data.results?.[0]
+      setReportResult(r?.sent ? "Report sent to notification email" : `Failed: ${r?.error ?? "unknown"}`)
+    } else {
+      setReportResult(`Error: ${data.error ?? "unknown"}`)
+    }
   }
 
   async function testPlaces() {
@@ -234,6 +264,66 @@ export function SettingsForm() {
               </div>
             )}
           </div>
+          <div className="pt-2 border-t border-zinc-100 flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={sendTestReport} disabled={sendingReport} className="gap-1.5 text-xs">
+              {sendingReport ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              Send test weekly report
+            </Button>
+            {reportResult && <span className="text-xs text-zinc-500">{reportResult}</span>}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Slack Notifications</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-zinc-500">
+            Post an alert to a Slack channel whenever a rule fires.
+          </p>
+          <div className="space-y-1">
+            <Label>Incoming Webhook URL</Label>
+            <Input
+              value={form.slackWebhookUrl ?? ""}
+              onChange={(e) => set("slackWebhookUrl", e.target.value)}
+              placeholder="https://hooks.slack.com/services/..."
+            />
+            <p className="text-xs text-zinc-400">Create a webhook at api.slack.com → Your Apps → Incoming Webhooks</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={testSlack} disabled={testingSlack || !form.slackWebhookUrl} className="gap-1.5">
+              {testingSlack && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              Send Test Message
+            </Button>
+            {slackResult && (
+              <div className="flex items-center gap-1.5 text-sm">
+                {slackResult.ok
+                  ? <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className={slackResult.ok ? "text-green-600" : "text-red-600"}>{slackResult.msg}</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Google Ads</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-zinc-500">
+            Infrastructure is ready. Add credentials to enable Google Ads campaign management.
+          </p>
+          <div className="space-y-2 p-3 rounded-md bg-zinc-50 border border-zinc-200 text-xs text-zinc-600">
+            <p className="font-medium text-zinc-700">How to acquire a Developer Token:</p>
+            <ol className="list-decimal ml-4 space-y-1">
+              <li>Sign in at ads.google.com → create a Manager Account</li>
+              <li>Go to <strong>Tools → API Center</strong> → apply for Developer Token</li>
+              <li>In Google Cloud Console → APIs &amp; Services → enable <em>Google Ads API</em></li>
+              <li>Create OAuth 2.0 credentials → add redirect URI: developers.google.com/oauthplayground</li>
+              <li>Use OAuth Playground to generate per-client refresh tokens</li>
+              <li>Set <code>GOOGLE_ADS_DEVELOPER_TOKEN</code>, <code>GOOGLE_ADS_CLIENT_ID</code>, <code>GOOGLE_ADS_CLIENT_SECRET</code> in Vercel env vars</li>
+            </ol>
+          </div>
+          <p className="text-xs text-zinc-400">Per-client Customer ID and refresh tokens are set in the Clients section below.</p>
         </CardContent>
       </Card>
 

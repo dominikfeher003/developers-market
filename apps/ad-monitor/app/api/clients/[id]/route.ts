@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readClients, writeClients } from "@/lib/storage"
+import { updateClientById, deleteClientById, readClients } from "@/lib/storage"
+import { Client } from "@/lib/types"
+
+function maskToken(client: Client) {
+  return {
+    ...client,
+    metaAccessToken: client.metaAccessToken ? "****" : "",
+    tiktokAccessToken: client.tiktokAccessToken ? "****" : undefined,
+    googleAdsRefreshToken: client.googleAdsRefreshToken ? "****" : undefined,
+  }
+}
 
 export async function PUT(
   req: NextRequest,
@@ -8,30 +18,22 @@ export async function PUT(
   const { id } = await params
   const body = await req.json()
 
-  const clients = await readClients()
-  const idx = clients.findIndex((c) => c.id === id)
-  if (idx === -1) return NextResponse.json({ error: "Client not found" }, { status: 404 })
+  // Build the partial update — never overwrite tokens with masked values
+  const updates: Partial<Client> = {}
+  if (typeof body.name === "string") updates.name = body.name.trim()
+  if (typeof body.metaAdAccountId === "string") updates.metaAdAccountId = body.metaAdAccountId.trim()
+  if (body.metaAccessToken && body.metaAccessToken !== "****") updates.metaAccessToken = body.metaAccessToken
+  if (typeof body.tiktokAdAccountId === "string") updates.tiktokAdAccountId = body.tiktokAdAccountId.trim() || undefined
+  if (body.tiktokAccessToken && body.tiktokAccessToken !== "****") updates.tiktokAccessToken = body.tiktokAccessToken
+  if (typeof body.googleAdsCustomerId === "string") updates.googleAdsCustomerId = body.googleAdsCustomerId.trim() || undefined
+  if (body.googleAdsRefreshToken && body.googleAdsRefreshToken !== "****") updates.googleAdsRefreshToken = body.googleAdsRefreshToken
+  if (typeof body.enabled === "boolean") updates.enabled = body.enabled
+  if (typeof body.userEmail === "string") updates.userEmail = body.userEmail.trim().toLowerCase()
 
-  const current = clients[idx]
-  clients[idx] = {
-    ...current,
-    name: typeof body.name === "string" ? body.name.trim() : current.name,
-    metaAdAccountId: typeof body.metaAdAccountId === "string" ? body.metaAdAccountId.trim() : current.metaAdAccountId,
-    metaAccessToken: body.metaAccessToken && body.metaAccessToken !== "****" ? body.metaAccessToken : current.metaAccessToken,
-    tiktokAdAccountId: typeof body.tiktokAdAccountId === "string" ? (body.tiktokAdAccountId.trim() || undefined) : current.tiktokAdAccountId,
-    tiktokAccessToken: body.tiktokAccessToken && body.tiktokAccessToken !== "****" ? body.tiktokAccessToken : current.tiktokAccessToken,
-    enabled: typeof body.enabled === "boolean" ? body.enabled : current.enabled,
-    userEmail: typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : current.userEmail,
-  }
-  await writeClients(clients)
+  const updated = await updateClientById(id, updates)
+  if (!updated) return NextResponse.json({ error: "Client not found" }, { status: 404 })
 
-  return NextResponse.json({
-    client: {
-      ...clients[idx],
-      metaAccessToken: clients[idx].metaAccessToken ? "****" : "",
-      tiktokAccessToken: clients[idx].tiktokAccessToken ? "****" : undefined,
-    },
-  })
+  return NextResponse.json({ client: maskToken(updated) })
 }
 
 export async function DELETE(
@@ -39,9 +41,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const clients = await readClients()
-  const filtered = clients.filter((c) => c.id !== id)
-  if (filtered.length === clients.length) return NextResponse.json({ error: "Client not found" }, { status: 404 })
-  await writeClients(filtered)
+  const deleted = await deleteClientById(id)
+  if (!deleted) return NextResponse.json({ error: "Client not found" }, { status: 404 })
   return NextResponse.json({ success: true })
+}
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const clients = await readClients()
+  const client = clients.find((c) => c.id === id)
+  if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 })
+  return NextResponse.json({ client: maskToken(client) })
 }

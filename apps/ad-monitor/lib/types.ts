@@ -39,6 +39,7 @@ export interface Settings {
   smtpPass: string
   imapHost: string
   imapPort: number
+  slackWebhookUrl?: string
   lastAgentRun: string | null
   agentEnabled: boolean
 }

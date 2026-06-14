@@ -1,200 +1,287 @@
-import { Settings, Rule, Alert, InboxEntry, Client, PotentialClient } from "./types"
+import { Settings, Rule, Alert, Client, PotentialClient } from "./types"
+import {
+  getDb,
+  settings as settingsTable,
+  clients as clientsTable,
+  rules as rulesTable,
+  alerts as alertsTable,
+  potentialClients as potentialClientsTable,
+  outreachHistory as outreachHistoryTable,
+  kvCache,
+  eq,
+  desc,
+  asc,
+} from "@dm/db"
 
-const DEFAULTS: Record<string, unknown> = {
-  "settings.json": {
-    metaAdAccountId: "",
-    metaAccessToken: "",
-    notificationEmail: "",
-    smtpHost: "smtp.gmail.com",
-    smtpPort: 587,
-    smtpUser: "",
-    smtpPass: "",
-    imapHost: "mail.privateemail.com",
-    imapPort: 993,
-    lastAgentRun: null,
-    agentEnabled: true,
-  },
-  "rules.json": [],
-  "alerts.json": [],
-  "cache.json": { fetchedAt: null, campaigns: [] },
-  "clients.json": [],
-  "potential-clients.json": [],
-  "outreach-history.json": [],
-  "inbox-cache.json": { fetchedAt: null, entries: [] },
-}
+// ---- Settings ----
 
-const CACHE_FILE_DEFAULT = { fetchedAt: null, campaigns: [] }
-
-function getDefault(filename: string): unknown {
-  if (filename in DEFAULTS) return DEFAULTS[filename]
-  if (/^cache-.+\.json$/.test(filename)) return CACHE_FILE_DEFAULT
-  return undefined
-}
-
-// Vercel serverless: only /tmp is writable. Local dev: use DATA_DIR env override.
-// os.tmpdir() gives the correct temp path cross-platform (/tmp on Linux, C:\Users\...\AppData\Local\Temp on Windows).
-import { tmpdir } from "os"
-import { join as pathJoin } from "path"
-const DATA_DIR = process.env.DATA_DIR ?? pathJoin(tmpdir(), "admonitor-data")
-const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN
-const BLOB_PREFIX = "admonitor"
-
-// ---- Blob helpers ----
-
-async function blobRead(filename: string): Promise<string | null> {
-  if (!BLOB_TOKEN) return null
-  try {
-    const { list } = await import("@vercel/blob")
-    const { blobs } = await list({
-      prefix: `${BLOB_PREFIX}/${filename}`,
-      token: BLOB_TOKEN,
-    })
-    const blob = blobs.find((b) => b.pathname === `${BLOB_PREFIX}/${filename}`)
-    if (!blob) return null
-    const res = await fetch(blob.url, {
-      headers: { Authorization: `Bearer ${BLOB_TOKEN}` },
-      cache: "no-store",
-    })
-    if (!res.ok) return null
-    return res.text()
-  } catch (err) {
-    console.error(`[storage] blob read failed for ${filename}:`, err)
-    return null
-  }
-}
-
-function blobPushBackground<T>(filename: string, data: T): void {
-  if (!BLOB_TOKEN) return
-  import("@vercel/blob").then(({ put }) =>
-    put(`${BLOB_PREFIX}/${filename}`, JSON.stringify(data, null, 2), {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      token: BLOB_TOKEN!,
-      contentType: "application/json",
-    })
-  ).catch((err) => console.error(`[storage] blob write failed for ${filename}:`, err))
-}
-
-// ---- /tmp cache helpers ----
-
-async function tmpRead(filename: string): Promise<string | null> {
-  try {
-    const fs = await import("fs/promises")
-    return await fs.readFile(pathJoin(DATA_DIR, filename), "utf8")
-  } catch {
-    return null
-  }
-}
-
-async function tmpWrite(filename: string, text: string): Promise<void> {
-  try {
-    const fs = await import("fs/promises")
-    await fs.mkdir(DATA_DIR, { recursive: true })
-    await fs.writeFile(pathJoin(DATA_DIR, filename), text, "utf8")
-  } catch (err) {
-    console.warn(`[storage] tmp write failed for ${filename}:`, err)
-  }
-}
-
-// ---- Core read/write ----
-
-async function fileRead<T>(filename: string): Promise<T> {
-  // 1. Hot /tmp cache
-  const cached = await tmpRead(filename)
-  if (cached !== null) {
-    try { return JSON.parse(cached) as T } catch { /* fall through */ }
-  }
-
-  // 2. Blob (persistent across cold starts)
-  const remote = await blobRead(filename)
-  if (remote !== null) {
-    await tmpWrite(filename, remote)
-    try { return JSON.parse(remote) as T } catch { /* fall through */ }
-  }
-
-  // 3. Default
-  const def = getDefault(filename)
-  if (def !== undefined) {
-    await fileWrite(filename, def)
-    return def as T
-  }
-  throw new Error(`[storage] No data and no default for: ${filename}`)
-}
-
-async function fileWrite<T>(filename: string, data: T): Promise<void> {
-  const text = JSON.stringify(data, null, 2)
-  await tmpWrite(filename, text)
-  blobPushBackground(filename, data)
-}
-
-// ---- Public API ----
-
-export async function readJSON<T>(filename: string): Promise<T> {
-  return fileRead<T>(filename)
-}
-
-export async function writeJSON<T>(filename: string, data: T): Promise<void> {
-  await fileWrite(filename, data)
+const SETTINGS_DEFAULTS: Settings = {
+  metaAdAccountId: "",
+  metaAccessToken: "",
+  notificationEmail: "",
+  smtpHost: "smtp.gmail.com",
+  smtpPort: 587,
+  smtpUser: "",
+  smtpPass: "",
+  imapHost: "mail.privateemail.com",
+  imapPort: 993,
+  slackWebhookUrl: undefined,
+  lastAgentRun: null,
+  agentEnabled: true,
 }
 
 export async function readSettings(): Promise<Settings> {
-  const defaults = DEFAULTS["settings.json"] as Settings
-  const saved = await readJSON<Partial<Settings>>("settings.json")
-  const clean = Object.fromEntries(
-    Object.entries(saved).filter(([, v]) => v !== undefined)
-  ) as Partial<Settings>
-  return { ...defaults, ...clean }
+  const rows = await getDb().select().from(settingsTable).where(eq(settingsTable.id, 1)).limit(1)
+  if (rows.length === 0) return { ...SETTINGS_DEFAULTS }
+  const r = rows[0]
+  return {
+    ...SETTINGS_DEFAULTS,
+    metaAdAccountId: r.metaAdAccountId,
+    metaAccessToken: r.metaAccessToken,
+    notificationEmail: r.notificationEmail,
+    smtpHost: r.smtpHost,
+    smtpPort: r.smtpPort,
+    smtpUser: r.smtpUser,
+    smtpPass: r.smtpPass,
+    imapHost: r.imapHost,
+    imapPort: r.imapPort,
+    slackWebhookUrl: r.slackWebhookUrl ?? undefined,
+    lastAgentRun: r.lastAgentRun ? r.lastAgentRun.toISOString() : null,
+    agentEnabled: r.agentEnabled,
+  }
 }
 
 export async function writeSettings(data: Partial<Settings>): Promise<Settings> {
   const current = await readSettings()
-  const updated = { ...current, ...data }
-  await writeJSON("settings.json", updated)
-  return updated
+  const merged = { ...current, ...data }
+  const vals = {
+    metaAdAccountId: merged.metaAdAccountId,
+    metaAccessToken: merged.metaAccessToken,
+    notificationEmail: merged.notificationEmail,
+    smtpHost: merged.smtpHost,
+    smtpPort: merged.smtpPort,
+    smtpUser: merged.smtpUser,
+    smtpPass: merged.smtpPass,
+    imapHost: merged.imapHost,
+    imapPort: merged.imapPort,
+    slackWebhookUrl: merged.slackWebhookUrl ?? null,
+    lastAgentRun: merged.lastAgentRun ? new Date(merged.lastAgentRun) : null,
+    agentEnabled: merged.agentEnabled,
+  }
+  await getDb()
+    .insert(settingsTable)
+    .values({ id: 1, ...vals })
+    .onConflictDoUpdate({ target: settingsTable.id, set: vals })
+  return merged
+}
+
+// ---- Clients ----
+
+function rowToClient(r: typeof clientsTable.$inferSelect): Client {
+  return {
+    id: r.id,
+    name: r.name,
+    metaAdAccountId: r.metaAdAccountId,
+    metaAccessToken: r.metaAccessToken,
+    tiktokAdAccountId: r.tiktokAdAccountId ?? undefined,
+    tiktokAccessToken: r.tiktokAccessToken ?? undefined,
+    googleAdsCustomerId: r.googleAdsCustomerId ?? undefined,
+    googleAdsRefreshToken: r.googleAdsRefreshToken ?? undefined,
+    userEmail: r.userEmail ?? undefined,
+    enabled: r.enabled,
+    createdAt: r.createdAt.toISOString(),
+  }
+}
+
+export async function readClients(): Promise<Client[]> {
+  const rows = await getDb().select().from(clientsTable).orderBy(asc(clientsTable.createdAt))
+  return rows.map(rowToClient)
+}
+
+export async function insertClient(client: Client): Promise<void> {
+  await getDb().insert(clientsTable).values({
+    id: client.id,
+    name: client.name,
+    metaAdAccountId: client.metaAdAccountId,
+    metaAccessToken: client.metaAccessToken,
+    tiktokAdAccountId: client.tiktokAdAccountId ?? null,
+    tiktokAccessToken: client.tiktokAccessToken ?? null,
+    googleAdsCustomerId: client.googleAdsCustomerId ?? null,
+    googleAdsRefreshToken: client.googleAdsRefreshToken ?? null,
+    userEmail: client.userEmail ?? null,
+    enabled: client.enabled,
+    createdAt: new Date(client.createdAt),
+  })
+}
+
+export async function updateClientById(id: string, updates: Partial<Client>): Promise<Client | null> {
+  const rows = await getDb().select().from(clientsTable).where(eq(clientsTable.id, id)).limit(1)
+  if (rows.length === 0) return null
+  const current = rowToClient(rows[0])
+  const merged = { ...current, ...updates }
+  await getDb()
+    .update(clientsTable)
+    .set({
+      name: merged.name,
+      metaAdAccountId: merged.metaAdAccountId,
+      metaAccessToken: merged.metaAccessToken,
+      tiktokAdAccountId: merged.tiktokAdAccountId ?? null,
+      tiktokAccessToken: merged.tiktokAccessToken ?? null,
+      googleAdsCustomerId: merged.googleAdsCustomerId ?? null,
+      googleAdsRefreshToken: merged.googleAdsRefreshToken ?? null,
+      userEmail: merged.userEmail ?? null,
+      enabled: merged.enabled,
+    })
+    .where(eq(clientsTable.id, id))
+  return merged
+}
+
+export async function deleteClientById(id: string): Promise<boolean> {
+  const result = await getDb().delete(clientsTable).where(eq(clientsTable.id, id))
+  return (result.rowCount ?? 0) > 0
+}
+
+// ---- Rules ----
+
+function rowToRule(r: typeof rulesTable.$inferSelect): Rule {
+  return {
+    id: r.id,
+    clientId: r.clientId,
+    name: r.name,
+    metric: r.metric as Rule["metric"],
+    operator: r.operator as Rule["operator"],
+    threshold: r.threshold,
+    windowDays: r.windowDays,
+    appliesTo: r.appliesTo as Rule["appliesTo"],
+    campaignIds: r.campaignIds ?? [],
+    action: r.action as Rule["action"],
+    actionValue: r.actionValue ?? null,
+    enabled: r.enabled,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }
 }
 
 export async function readRules(): Promise<Rule[]> {
-  return readJSON<Rule[]>("rules.json")
+  const rows = await getDb().select().from(rulesTable).orderBy(asc(rulesTable.createdAt))
+  return rows.map(rowToRule)
 }
 
 export async function appendRule(rule: Rule): Promise<void> {
-  const rules = await readRules()
-  rules.push(rule)
-  await writeJSON("rules.json", rules)
+  await getDb().insert(rulesTable).values({
+    id: rule.id,
+    clientId: rule.clientId,
+    name: rule.name,
+    metric: rule.metric,
+    operator: rule.operator,
+    threshold: rule.threshold,
+    windowDays: rule.windowDays,
+    appliesTo: rule.appliesTo,
+    campaignIds: rule.campaignIds,
+    action: rule.action,
+    actionValue: rule.actionValue ?? null,
+    enabled: rule.enabled,
+    createdAt: new Date(rule.createdAt),
+    updatedAt: new Date(rule.updatedAt),
+  })
 }
 
 export async function updateRule(id: string, updates: Partial<Rule>): Promise<Rule | null> {
-  const rules = await readRules()
-  const idx = rules.findIndex((r) => r.id === id)
-  if (idx === -1) return null
-  rules[idx] = { ...rules[idx], ...updates, updatedAt: new Date().toISOString() }
-  await writeJSON("rules.json", rules)
-  return rules[idx]
+  const rows = await getDb().select().from(rulesTable).where(eq(rulesTable.id, id)).limit(1)
+  if (rows.length === 0) return null
+  const now = new Date()
+  await getDb()
+    .update(rulesTable)
+    .set({
+      ...(updates.name !== undefined && { name: updates.name }),
+      ...(updates.metric !== undefined && { metric: updates.metric }),
+      ...(updates.operator !== undefined && { operator: updates.operator }),
+      ...(updates.threshold !== undefined && { threshold: updates.threshold }),
+      ...(updates.windowDays !== undefined && { windowDays: updates.windowDays }),
+      ...(updates.appliesTo !== undefined && { appliesTo: updates.appliesTo }),
+      ...(updates.campaignIds !== undefined && { campaignIds: updates.campaignIds }),
+      ...(updates.action !== undefined && { action: updates.action }),
+      ...(updates.actionValue !== undefined && { actionValue: updates.actionValue }),
+      ...(updates.enabled !== undefined && { enabled: updates.enabled }),
+      updatedAt: now,
+    })
+    .where(eq(rulesTable.id, id))
+  const updated = rowToRule(rows[0])
+  return { ...updated, ...updates, updatedAt: now.toISOString() }
 }
 
 export async function deleteRule(id: string): Promise<boolean> {
-  const rules = await readRules()
-  const filtered = rules.filter((r) => r.id !== id)
-  if (filtered.length === rules.length) return false
-  await writeJSON("rules.json", filtered)
-  return true
+  const result = await getDb().delete(rulesTable).where(eq(rulesTable.id, id))
+  return (result.rowCount ?? 0) > 0
+}
+
+// ---- Alerts ----
+
+function rowToAlert(r: typeof alertsTable.$inferSelect): Alert {
+  return {
+    id: r.id,
+    timestamp: r.timestamp.toISOString(),
+    ruleId: r.ruleId,
+    ruleName: r.ruleName,
+    campaignId: r.campaignId,
+    campaignName: r.campaignName,
+    action: r.action as Alert["action"],
+    actionValue: r.actionValue ?? null,
+    metricValue: r.metricValue,
+    metricName: r.metricName as Alert["metricName"],
+    status: r.status as Alert["status"],
+    errorMessage: r.errorMessage ?? null,
+    agentRunId: r.agentRunId,
+  }
 }
 
 export async function readAlerts(): Promise<Alert[]> {
-  return readJSON<Alert[]>("alerts.json")
+  const rows = await getDb()
+    .select()
+    .from(alertsTable)
+    .orderBy(desc(alertsTable.timestamp))
+    .limit(1000)
+  return rows.map(rowToAlert)
 }
 
 export async function appendAlert(alert: Alert): Promise<void> {
-  const alerts = await readAlerts()
-  alerts.unshift(alert)
-  if (alerts.length > 1000) alerts.splice(1000)
-  await writeJSON("alerts.json", alerts)
+  await getDb().insert(alertsTable).values({
+    id: alert.id,
+    ruleId: alert.ruleId,
+    ruleName: alert.ruleName,
+    campaignId: alert.campaignId,
+    campaignName: alert.campaignName,
+    action: alert.action,
+    actionValue: alert.actionValue ?? null,
+    metricValue: alert.metricValue,
+    metricName: alert.metricName,
+    status: alert.status,
+    errorMessage: alert.errorMessage ?? null,
+    agentRunId: alert.agentRunId,
+    timestamp: new Date(alert.timestamp),
+  })
 }
 
 export async function clearAlerts(): Promise<void> {
-  await writeJSON("alerts.json", [])
+  await getDb().delete(alertsTable)
 }
+
+// ---- KV Cache (campaign cache, inbox cache) ----
+
+export async function readJSON<T>(key: string): Promise<T | null> {
+  const rows = await getDb().select({ data: kvCache.data }).from(kvCache).where(eq(kvCache.key, key)).limit(1)
+  return rows.length > 0 ? (rows[0].data as T) : null
+}
+
+export async function writeJSON<T>(key: string, data: T): Promise<void> {
+  const payload = data as Record<string, unknown>
+  await getDb()
+    .insert(kvCache)
+    .values({ key, data: payload, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: kvCache.key, set: { data: payload, updatedAt: new Date() } })
+}
+
+// ---- Outreach History ----
 
 export interface OutreachEntry {
   id: string
@@ -208,14 +295,48 @@ export interface OutreachEntry {
 }
 
 export async function readOutreachHistory(): Promise<OutreachEntry[]> {
-  return readJSON<OutreachEntry[]>("outreach-history.json")
+  const rows = await getDb()
+    .select()
+    .from(outreachHistoryTable)
+    .orderBy(desc(outreachHistoryTable.sentAt))
+    .limit(2000)
+  return rows.map((r) => ({
+    id: r.id,
+    sentAt: r.sentAt,
+    to: r.toEmail,
+    toName: r.toName,
+    company: r.company,
+    subject: r.subject,
+    status: r.status as "sent" | "failed",
+    error: r.error ?? undefined,
+  }))
 }
 
 export async function appendOutreachEntry(entry: OutreachEntry): Promise<void> {
-  const history = await readOutreachHistory()
-  history.unshift(entry)
-  if (history.length > 2000) history.splice(2000)
-  await writeJSON("outreach-history.json", history)
+  await getDb().insert(outreachHistoryTable).values({
+    id: entry.id,
+    sentAt: entry.sentAt,
+    toEmail: entry.to,
+    toName: entry.toName,
+    company: entry.company,
+    subject: entry.subject,
+    status: entry.status,
+    error: entry.error ?? null,
+  })
+}
+
+// ---- Inbox Cache (stored in kv_cache) ----
+
+export interface InboxEntry {
+  uid: number
+  from: string
+  fromName: string
+  subject: string
+  preview: string
+  body: string
+  receivedAt: string
+  read: boolean
+  leadCompany?: string
 }
 
 interface InboxCache {
@@ -224,25 +345,64 @@ interface InboxCache {
 }
 
 export async function readInboxCache(): Promise<InboxCache> {
-  return readJSON<InboxCache>("inbox-cache.json")
+  return (await readJSON<InboxCache>("inbox-cache")) ?? { fetchedAt: null, entries: [] }
 }
 
 export async function writeInboxCache(data: InboxCache): Promise<void> {
-  await writeJSON("inbox-cache.json", data)
+  await writeJSON("inbox-cache", data)
 }
 
-export async function readClients(): Promise<Client[]> {
-  return readJSON<Client[]>("clients.json")
-}
+// ---- Potential Clients ----
 
-export async function writeClients(clients: Client[]): Promise<void> {
-  await writeJSON("clients.json", clients)
+function rowToPotentialClient(r: typeof potentialClientsTable.$inferSelect): PotentialClient {
+  return {
+    id: r.id,
+    firstName: r.firstName,
+    lastName: r.lastName,
+    email: r.email,
+    title: r.title,
+    company: r.company,
+    website: r.website,
+    country: r.country,
+    language: r.language,
+    status: r.status as PotentialClient["status"],
+    scheduledFor: r.scheduledFor,
+    sentAt: r.sentAt,
+    notes: r.notes,
+    addedAt: r.addedAt,
+  }
 }
 
 export async function readPotentialClients(): Promise<PotentialClient[]> {
-  return readJSON<PotentialClient[]>("potential-clients.json")
+  const rows = await getDb().select().from(potentialClientsTable).orderBy(asc(potentialClientsTable.addedAt))
+  return rows.map(rowToPotentialClient)
 }
 
-export async function writePotentialClients(clients: PotentialClient[]): Promise<void> {
-  await writeJSON("potential-clients.json", clients)
+export async function writePotentialClients(clientsList: PotentialClient[]): Promise<void> {
+  const db = getDb()
+  await db.delete(potentialClientsTable)
+  if (clientsList.length === 0) return
+  await db.insert(potentialClientsTable).values(
+    clientsList.map((c) => ({
+      id: c.id,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      email: c.email,
+      title: c.title,
+      company: c.company,
+      website: c.website,
+      country: c.country,
+      language: c.language,
+      status: c.status,
+      scheduledFor: c.scheduledFor,
+      sentAt: c.sentAt,
+      notes: c.notes,
+      addedAt: c.addedAt,
+    }))
+  )
+}
+
+// Kept for backward compat — agent no longer uses file-based client writes
+export async function writeClients(_clients: Client[]): Promise<void> {
+  // Clients are managed individually via insertClient / updateClientById / deleteClientById
 }

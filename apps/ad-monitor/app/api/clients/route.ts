@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { nanoid } from "nanoid"
-import { readClients, writeClients } from "@/lib/storage"
+import { readClients, insertClient } from "@/lib/storage"
 import { Client } from "@/lib/types"
 
 function maskToken(client: Client) {
@@ -8,6 +8,7 @@ function maskToken(client: Client) {
     ...client,
     metaAccessToken: client.metaAccessToken ? "****" : "",
     tiktokAccessToken: client.tiktokAccessToken ? "****" : undefined,
+    googleAdsRefreshToken: client.googleAdsRefreshToken ? "****" : undefined,
   }
 }
 
@@ -37,14 +38,13 @@ export async function POST(req: NextRequest) {
     metaAccessToken,
     tiktokAdAccountId: typeof body.tiktokAdAccountId === "string" && body.tiktokAdAccountId.trim() ? body.tiktokAdAccountId.trim() : undefined,
     tiktokAccessToken: typeof body.tiktokAccessToken === "string" && body.tiktokAccessToken.trim() ? body.tiktokAccessToken : undefined,
+    googleAdsCustomerId: typeof body.googleAdsCustomerId === "string" && body.googleAdsCustomerId.trim() ? body.googleAdsCustomerId.trim() : undefined,
+    googleAdsRefreshToken: typeof body.googleAdsRefreshToken === "string" && body.googleAdsRefreshToken.trim() ? body.googleAdsRefreshToken : undefined,
     enabled: true,
     createdAt: new Date().toISOString(),
     userEmail: typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : "",
   }
 
-  const clients = await readClients()
-  clients.push(client)
-  await writeClients(clients)
-
+  await insertClient(client)
   return NextResponse.json({ client: maskToken(client) }, { status: 201 })
 }
