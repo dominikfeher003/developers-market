@@ -31,55 +31,100 @@ function getDefault(filename: string): unknown {
   return undefined
 }
 
-// ---- Blob helpers (portal sync for shared data) ----
+// Vercel serverless: only /tmp is writable. Local dev: use DATA_DIR env override.
+// os.tmpdir() gives the correct temp path cross-platform (/tmp on Linux, C:\Users\...\AppData\Local\Temp on Windows).
+import { tmpdir } from "os"
+import { join as pathJoin } from "path"
+const DATA_DIR = process.env.DATA_DIR ?? pathJoin(tmpdir(), "admonitor-data")
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN
+const BLOB_PREFIX = "admonitor"
 
-const BLOB_FILES = new Set(["clients.json", "rules.json", "alerts.json"])
+// ---- Blob helpers ----
 
-function blobSyncEnabled(filename: string): boolean {
-  return BLOB_FILES.has(filename) && !!process.env.BLOB_READ_WRITE_TOKEN
-}
-
-function blobPushBackground<T>(filename: string, data: T): void {
-  if (!blobSyncEnabled(filename)) return
-  import("@vercel/blob").then(({ put }) =>
-    put(`admonitor/${filename}`, JSON.stringify(data, null, 2), {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      token: process.env.BLOB_READ_WRITE_TOKEN!,
-      contentType: "application/json",
-    })
-  ).catch((err) => console.error(`[blob] sync failed for ${filename}:`, err))
-}
-
-// ---- File helpers ----
-
-async function fileRead<T>(filename: string): Promise<T> {
-  const fs = await import("fs/promises")
-  const path = await import("path")
-  const DATA_DIR = path.join(process.cwd(), "data")
-  await fs.mkdir(DATA_DIR, { recursive: true })
-  const filePath = path.join(DATA_DIR, filename)
+async function blobRead(filename: string): Promise<string | null> {
+  if (!BLOB_TOKEN) return null
   try {
-    const content = await fs.readFile(filePath, "utf8")
-    return JSON.parse(content) as T
-  } catch {
-    const def = getDefault(filename)
-    if (def !== undefined) {
-      await fileWrite(filename, def)
-      return def as T
-    }
-    throw new Error(`File not found and no default: ${filename}`)
+    const { list } = await import("@vercel/blob")
+    const { blobs } = await list({
+      prefix: `${BLOB_PREFIX}/${filename}`,
+      token: BLOB_TOKEN,
+    })
+    const blob = blobs.find((b) => b.pathname === `${BLOB_PREFIX}/${filename}`)
+    if (!blob) return null
+    const res = await fetch(blob.url, {
+      headers: { Authorization: `Bearer ${BLOB_TOKEN}` },
+      cache: "no-store",
+    })
+    if (!res.ok) return null
+    return res.text()
+  } catch (err) {
+    console.error(`[storage] blob read failed for ${filename}:`, err)
+    return null
   }
 }
 
+function blobPushBackground<T>(filename: string, data: T): void {
+  if (!BLOB_TOKEN) return
+  import("@vercel/blob").then(({ put }) =>
+    put(`${BLOB_PREFIX}/${filename}`, JSON.stringify(data, null, 2), {
+      access: "private",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      token: BLOB_TOKEN!,
+      contentType: "application/json",
+    })
+  ).catch((err) => console.error(`[storage] blob write failed for ${filename}:`, err))
+}
+
+// ---- /tmp cache helpers ----
+
+async function tmpRead(filename: string): Promise<string | null> {
+  try {
+    const fs = await import("fs/promises")
+    return await fs.readFile(pathJoin(DATA_DIR, filename), "utf8")
+  } catch {
+    return null
+  }
+}
+
+async function tmpWrite(filename: string, text: string): Promise<void> {
+  try {
+    const fs = await import("fs/promises")
+    await fs.mkdir(DATA_DIR, { recursive: true })
+    await fs.writeFile(pathJoin(DATA_DIR, filename), text, "utf8")
+  } catch (err) {
+    console.warn(`[storage] tmp write failed for ${filename}:`, err)
+  }
+}
+
+// ---- Core read/write ----
+
+async function fileRead<T>(filename: string): Promise<T> {
+  // 1. Hot /tmp cache
+  const cached = await tmpRead(filename)
+  if (cached !== null) {
+    try { return JSON.parse(cached) as T } catch { /* fall through */ }
+  }
+
+  // 2. Blob (persistent across cold starts)
+  const remote = await blobRead(filename)
+  if (remote !== null) {
+    await tmpWrite(filename, remote)
+    try { return JSON.parse(remote) as T } catch { /* fall through */ }
+  }
+
+  // 3. Default
+  const def = getDefault(filename)
+  if (def !== undefined) {
+    await fileWrite(filename, def)
+    return def as T
+  }
+  throw new Error(`[storage] No data and no default for: ${filename}`)
+}
+
 async function fileWrite<T>(filename: string, data: T): Promise<void> {
-  const fs = await import("fs/promises")
-  const path = await import("path")
-  const DATA_DIR = path.join(process.cwd(), "data")
-  await fs.mkdir(DATA_DIR, { recursive: true })
-  const filePath = path.join(DATA_DIR, filename)
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8")
+  const text = JSON.stringify(data, null, 2)
+  await tmpWrite(filename, text)
   blobPushBackground(filename, data)
 }
 
