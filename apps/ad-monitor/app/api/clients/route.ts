@@ -3,8 +3,12 @@ import { nanoid } from "nanoid"
 import { readClients, writeClients } from "@/lib/storage"
 import { Client } from "@/lib/types"
 
-function maskToken(client: Client): Omit<Client, "metaAccessToken"> & { metaAccessToken: string } {
-  return { ...client, metaAccessToken: client.metaAccessToken ? "****" : "" }
+function maskToken(client: Client) {
+  return {
+    ...client,
+    metaAccessToken: client.metaAccessToken ? "****" : "",
+    tiktokAccessToken: client.tiktokAccessToken ? "****" : undefined,
+  }
 }
 
 export async function GET() {
@@ -31,6 +35,8 @@ export async function POST(req: NextRequest) {
     name: name.trim(),
     metaAdAccountId: metaAdAccountId.trim(),
     metaAccessToken,
+    tiktokAdAccountId: typeof body.tiktokAdAccountId === "string" && body.tiktokAdAccountId.trim() ? body.tiktokAdAccountId.trim() : undefined,
+    tiktokAccessToken: typeof body.tiktokAccessToken === "string" && body.tiktokAccessToken.trim() ? body.tiktokAccessToken : undefined,
     enabled: true,
     createdAt: new Date().toISOString(),
     userEmail: typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : "",

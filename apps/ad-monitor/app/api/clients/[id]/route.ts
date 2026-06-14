@@ -18,13 +18,19 @@ export async function PUT(
     name: typeof body.name === "string" ? body.name.trim() : current.name,
     metaAdAccountId: typeof body.metaAdAccountId === "string" ? body.metaAdAccountId.trim() : current.metaAdAccountId,
     metaAccessToken: body.metaAccessToken && body.metaAccessToken !== "****" ? body.metaAccessToken : current.metaAccessToken,
+    tiktokAdAccountId: typeof body.tiktokAdAccountId === "string" ? (body.tiktokAdAccountId.trim() || undefined) : current.tiktokAdAccountId,
+    tiktokAccessToken: body.tiktokAccessToken && body.tiktokAccessToken !== "****" ? body.tiktokAccessToken : current.tiktokAccessToken,
     enabled: typeof body.enabled === "boolean" ? body.enabled : current.enabled,
     userEmail: typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : current.userEmail,
   }
   await writeClients(clients)
 
   return NextResponse.json({
-    client: { ...clients[idx], metaAccessToken: clients[idx].metaAccessToken ? "****" : "" },
+    client: {
+      ...clients[idx],
+      metaAccessToken: clients[idx].metaAccessToken ? "****" : "",
+      tiktokAccessToken: clients[idx].tiktokAccessToken ? "****" : undefined,
+    },
   })
 }
 
