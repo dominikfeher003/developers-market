@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { FadeIn } from "@/components/ui/FadeIn"
@@ -23,11 +22,11 @@ export function CtaSection() {
             <p className="text-zinc-400 text-lg mb-10 max-w-md mx-auto">{t.cta.sub}</p>
           </FadeIn>
           <FadeIn delay={0.2}>
-            <Link href="/contact">
+            <a href="https://app.developers-market.com" target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="rounded-full bg-indigo-600 hover:bg-indigo-500 hover:scale-105 active:scale-95 transition-transform text-white px-10 h-12 text-base gap-2">
-                {t.cta.button} <ArrowRight className="h-4 w-4" />
+                Open App <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
+            </a>
           </FadeIn>
         </div>
       </div>

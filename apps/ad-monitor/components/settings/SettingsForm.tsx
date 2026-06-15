@@ -82,14 +82,10 @@ export function SettingsForm() {
     setTesting(true)
     setTestResult(null)
     await save()
-    const res = await fetch("/api/campaigns?force=1")
-    const data = res.ok ? await res.json() : { error: `Server error ${res.status}` }
+    const res = await fetch("/api/settings/test-meta", { method: "POST" })
+    const data = res.ok ? await res.json() : { ok: false, msg: `Server error ${res.status}` }
     setTesting(false)
-    if (data.error) {
-      setTestResult({ ok: false, msg: data.error })
-    } else {
-      setTestResult({ ok: true, msg: `Connected — ${data.campaigns?.length ?? 0} campaigns found` })
-    }
+    setTestResult({ ok: data.ok, msg: data.msg })
   }
 
   async function testImap() {

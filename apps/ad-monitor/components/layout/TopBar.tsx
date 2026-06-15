@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Play, Loader2, ChevronDown, ChevronUp, Menu } from "lucide-react"
+import { Play, Loader2, ChevronDown, ChevronUp, Menu, Moon, Sun } from "lucide-react"
 import { useSidebar } from "@/lib/sidebar-context"
 
 interface TopBarProps {
@@ -15,7 +15,19 @@ export function TopBar({ title, lastRun }: TopBarProps) {
   const [result, setResult] = useState<string | null>(null)
   const [log, setLog] = useState<string[]>([])
   const [showLog, setShowLog] = useState(false)
+  const [dark, setDark] = useState(false)
   const { setOpen } = useSidebar()
+
+  useEffect(() => {
+    setDark(document.documentElement.classList.contains("dark"))
+  }, [])
+
+  function toggleTheme() {
+    const next = !dark
+    setDark(next)
+    document.documentElement.classList.toggle("dark", next)
+    localStorage.setItem("monitor-theme", next ? "dark" : "light")
+  }
 
   async function handleRun() {
     setRunning(true)
@@ -36,7 +48,7 @@ export function TopBar({ title, lastRun }: TopBarProps) {
 
   return (
     <div>
-      <header className="flex items-center justify-between px-4 md:px-6 py-4 border-b bg-white gap-3">
+      <header className="flex items-center justify-between px-4 md:px-6 py-4 border-b bg-background gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <button
             className="md:hidden text-zinc-500 hover:text-zinc-900 shrink-0"
@@ -65,6 +77,13 @@ export function TopBar({ title, lastRun }: TopBarProps) {
               Last run: {new Date(lastRun).toLocaleString()}
             </span>
           )}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            title={dark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
           <Button size="sm" onClick={handleRun} disabled={running} className="gap-1.5">
             {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">Run Agent</span>

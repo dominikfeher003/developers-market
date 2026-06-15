@@ -12,10 +12,15 @@ export const metadata: Metadata = {
   description: "Campaign Monitor Agent Dashboard",
 }
 
+const themeScript = `(function(){try{var t=localStorage.getItem('monitor-theme')||'light';if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}})();`
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-zinc-50 overflow-x-hidden`}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className={`${inter.className} bg-background overflow-x-hidden`}>
         <ClientProvider>
           <SidebarProvider>
             <Sidebar />

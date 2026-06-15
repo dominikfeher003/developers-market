@@ -138,7 +138,7 @@ export function Sidebar({ open, onClose, collapsed, onCollapse, clientName }: Pr
         </div>
 
         {/* Nav */}
-        <nav className={cn("flex-1 overflow-y-auto py-3", collapsed ? "px-1.5" : "px-3")}>
+        <nav className={cn("flex-1 overflow-y-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", collapsed ? "px-1.5" : "px-3")}>
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="mb-4">
               {!collapsed && (
