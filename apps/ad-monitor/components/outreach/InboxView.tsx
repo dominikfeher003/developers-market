@@ -61,7 +61,7 @@ export function InboxView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-zinc-700">
+          <p className="text-sm font-medium text-foreground">
             {entries.length} {entries.length === 1 ? "reply" : "replies"} from leads
           </p>
           {fetchedAt && (
@@ -99,7 +99,7 @@ export function InboxView() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-medium text-sm text-zinc-900 truncate">{entry.fromName}</span>
+                      <span className="font-medium text-sm text-foreground truncate">{entry.fromName}</span>
                       <span className="text-xs text-zinc-400 shrink-0">{entry.from}</span>
                     </div>
                     {entry.leadCompany && (
@@ -108,7 +108,7 @@ export function InboxView() {
                         {entry.leadCompany}
                       </div>
                     )}
-                    <p className="text-sm font-medium text-zinc-800 truncate">{entry.subject}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{entry.subject}</p>
                     {!expanded && (
                       <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2">{entry.preview}</p>
                     )}
@@ -119,8 +119,8 @@ export function InboxView() {
                   </div>
                 </div>
                 {expanded && entry.body && (
-                  <div className="mt-3 pt-3 border-t border-zinc-100">
-                    <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
                       {entry.body}
                     </pre>
                   </div>

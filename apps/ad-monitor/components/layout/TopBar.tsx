@@ -51,12 +51,12 @@ export function TopBar({ title, lastRun }: TopBarProps) {
       <header className="flex items-center justify-between px-4 md:px-6 py-4 border-b bg-background gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <button
-            className="md:hidden text-zinc-500 hover:text-zinc-900 shrink-0"
+            className="md:hidden text-zinc-500 hover:text-foreground shrink-0"
             onClick={() => setOpen(true)}
           >
             <Menu className="h-5 w-5" />
           </button>
-          <h1 className="text-xl font-semibold text-zinc-900 truncate">{title}</h1>
+          <h1 className="text-xl font-semibold text-foreground truncate">{title}</h1>
         </div>
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
           {result && (
@@ -98,7 +98,7 @@ export function TopBar({ title, lastRun }: TopBarProps) {
         </div>
       )}
       {result && (
-        <div className="sm:hidden border-b bg-zinc-50 px-4 py-2">
+        <div className="sm:hidden border-b bg-muted px-4 py-2">
           <p className="text-xs text-zinc-500">{result}</p>
         </div>
       )}

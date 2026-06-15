@@ -204,7 +204,7 @@ export function ClientsManager() {
       </div>
 
       {showForm && (
-        <div className="border rounded-lg p-5 space-y-4 bg-white">
+        <div className="border rounded-lg p-5 space-y-4 bg-card">
           <h3 className="font-medium text-sm">{editingId ? "Edit Client" : "New Client"}</h3>
           <div className="space-y-3">
             <div className="space-y-1">
@@ -258,7 +258,7 @@ export function ClientsManager() {
             </button>
 
             {showTikTok && (
-              <div className="space-y-3 pl-3 border-l-2 border-zinc-100">
+              <div className="space-y-3 pl-3 border-l-2 border-border">
                 <div className="space-y-1">
                   <Label>TikTok Advertiser ID</Label>
                   <Input
@@ -290,7 +290,7 @@ export function ClientsManager() {
             </button>
 
             {showGoogle && (
-              <div className="space-y-3 pl-3 border-l-2 border-zinc-100">
+              <div className="space-y-3 pl-3 border-l-2 border-border">
                 <div className="space-y-1">
                   <Label>Customer ID</Label>
                   <Input
@@ -328,13 +328,13 @@ export function ClientsManager() {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-zinc-400" /></div>
       ) : clients.length === 0 ? (
         <div className="text-center py-16 text-zinc-400 border-2 border-dashed rounded-lg">
-          <p className="font-medium text-zinc-600">No clients yet</p>
+          <p className="font-medium text-foreground">No clients yet</p>
           <p className="text-sm mt-1">Add a client to manage their Meta and TikTok ad accounts.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {clients.map((client) => (
-            <div key={client.id} className="border rounded-lg p-4 bg-white">
+            <div key={client.id} className="border rounded-lg p-4 bg-card">
               <div className="flex items-start gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -424,7 +424,7 @@ export function ClientsManager() {
 
             {/* Users panel */}
             {expandedUsers === client.id && (
-              <div className="mt-3 pt-3 border-t border-zinc-100 space-y-2">
+              <div className="mt-3 pt-3 border-t border-border space-y-2">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Portal Users</p>
                 {(clientUsers[client.id] ?? []).length === 0 ? (
                   <p className="text-xs text-zinc-400">No users linked yet. Add a user below to grant portal access.</p>
@@ -434,7 +434,7 @@ export function ClientsManager() {
                       <div key={u.id} className="flex items-center justify-between text-xs py-1">
                         <div>
                           <span className="font-medium text-zinc-700">{u.userEmail}</span>
-                          <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold ${u.role === "admin" ? "bg-indigo-50 text-indigo-700" : "bg-zinc-100 text-zinc-500"}`}>{u.role}</span>
+                          <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold ${u.role === "admin" ? "bg-indigo-600/10 text-indigo-400 dark:text-indigo-300" : "bg-muted text-muted-foreground"}`}>{u.role}</span>
                         </div>
                         <button onClick={() => removeUser(client.id, u.userEmail)} className="text-red-400 hover:text-red-600 ml-2">
                           <X className="h-3 w-3" />
@@ -454,7 +454,7 @@ export function ClientsManager() {
                   <select
                     value={addUserRole}
                     onChange={(e) => setAddUserRole(e.target.value as "viewer" | "admin")}
-                    className="h-7 text-xs border border-zinc-200 rounded px-1.5 bg-white"
+                    className="h-7 text-xs border border-border rounded px-1.5 bg-background text-foreground"
                   >
                     <option value="viewer">Viewer</option>
                     <option value="admin">Admin</option>

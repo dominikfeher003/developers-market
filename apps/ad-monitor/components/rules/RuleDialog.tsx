@@ -65,7 +65,7 @@ export function RuleDialog({ open, onClose, onSaved, rule, clientId = null }: Pr
             />
           </div>
 
-          <div className="bg-zinc-50 rounded-lg p-4 space-y-3 border border-zinc-200">
+          <div className="bg-muted rounded-lg p-4 space-y-3 border">
             {/* When [metric] is [below/above] [value] */}
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="text-zinc-500 font-medium w-10">When</span>
@@ -141,7 +141,7 @@ export function RuleDialog({ open, onClose, onSaved, rule, clientId = null }: Pr
             </div>
 
             {/* → then [action] */}
-            <div className="flex flex-wrap items-center gap-2 text-sm pt-2 border-t border-zinc-200">
+            <div className="flex flex-wrap items-center gap-2 text-sm pt-2 border-t border-border">
               <span className="text-zinc-500 font-medium w-10">→</span>
               <Select value={action} onValueChange={(v) => v && setAction(v as typeof action)}>
                 <SelectTrigger className="h-8 w-auto text-sm">

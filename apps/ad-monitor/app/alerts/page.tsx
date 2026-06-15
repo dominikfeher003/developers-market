@@ -53,7 +53,7 @@ export default function AlertsPage() {
         {loading ? (
           <div className="flex justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-zinc-400" /></div>
         ) : (
-          <div className="bg-white rounded-lg border overflow-x-auto">
+          <div className="bg-card rounded-lg border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

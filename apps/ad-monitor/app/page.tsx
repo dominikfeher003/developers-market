@@ -85,7 +85,7 @@ export default function DashboardPage() {
                 <Card key={label}>
                   <CardContent className="pt-5">
                     <p className="text-xs text-zinc-500">{label}</p>
-                    <p className="text-2xl font-bold text-zinc-900 mt-1">{value}</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
                   </CardContent>
                 </Card>
               ))}

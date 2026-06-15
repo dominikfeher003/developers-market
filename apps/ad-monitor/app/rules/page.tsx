@@ -73,7 +73,7 @@ export default function RulesPage() {
           <div className="flex justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-zinc-400" /></div>
         ) : rules.length === 0 ? (
           <div className="text-center py-24 text-zinc-400 border-2 border-dashed rounded-lg">
-            <p className="font-medium text-zinc-600">No rules yet</p>
+            <p className="font-medium text-foreground">No rules yet</p>
             <p className="text-sm mt-1 max-w-sm mx-auto">
               Rules automatically pause, resume, scale budgets, or alert you when your campaigns hit certain thresholds.
             </p>

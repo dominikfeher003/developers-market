@@ -235,7 +235,7 @@ export function SettingsForm() {
             </div>
           </div>
           <p className="text-xs text-zinc-400">For Gmail: myaccount.google.com → Security → 2-Step Verification → App Passwords</p>
-          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-100">
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
             <div className="space-y-1">
               <Label>IMAP Host</Label>
               <Input value={form.imapHost ?? ""} onChange={(e) => set("imapHost", e.target.value)} placeholder="mail.privateemail.com" />
@@ -260,7 +260,7 @@ export function SettingsForm() {
               </div>
             )}
           </div>
-          <div className="pt-2 border-t border-zinc-100 flex items-center gap-2">
+          <div className="pt-2 border-t border-border flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={sendTestReport} disabled={sendingReport} className="gap-1.5 text-xs">
               {sendingReport ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               Send test weekly report
@@ -308,8 +308,8 @@ export function SettingsForm() {
           <p className="text-sm text-zinc-500">
             Infrastructure is ready. Add credentials to enable Google Ads campaign management.
           </p>
-          <div className="space-y-2 p-3 rounded-md bg-zinc-50 border border-zinc-200 text-xs text-zinc-600">
-            <p className="font-medium text-zinc-700">How to acquire a Developer Token:</p>
+          <div className="space-y-2 p-3 rounded-md bg-muted border text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">How to acquire a Developer Token:</p>
             <ol className="list-decimal ml-4 space-y-1">
               <li>Sign in at ads.google.com → create a Manager Account</li>
               <li>Go to <strong>Tools → API Center</strong> → apply for Developer Token</li>
@@ -329,7 +329,7 @@ export function SettingsForm() {
           <p className="text-sm text-zinc-500">
             Used by the <strong>Find on Maps</strong> tab in Outreach to search for businesses via Google Maps.
           </p>
-          <div className="flex items-center gap-2 p-3 rounded-md bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center gap-2 p-3 rounded-md bg-muted border">
             <code className="text-xs text-zinc-600 flex-1">GOOGLE_PLACES_API_KEY</code>
             <span className="text-xs text-zinc-400">set in Vercel environment variables</span>
           </div>
@@ -396,7 +396,7 @@ export function SettingsForm() {
           <p className="text-xs text-zinc-400">
             To schedule daily runs on Windows, run this in PowerShell as Administrator:
           </p>
-          <pre className="text-xs bg-zinc-50 border rounded p-3 overflow-x-auto whitespace-pre-wrap">{`$action = New-ScheduledTaskAction -Execute "curl.exe" \`
+          <pre className="text-xs bg-muted border rounded p-3 overflow-x-auto whitespace-pre-wrap">{`$action = New-ScheduledTaskAction -Execute "curl.exe" \`
   -Argument "-X POST http://localhost:3000/api/agent/run -H 'Authorization: Bearer change-this-to-a-long-random-secret'"
 $trigger = New-ScheduledTaskTrigger -Daily -At 6AM
 Register-ScheduledTask -TaskName "AdMonitorAgent" -Action $action -Trigger $trigger`}</pre>
