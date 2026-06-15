@@ -16,16 +16,21 @@ export default function DashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [campRes, settingsRes] = await Promise.all([
-      fetch("/api/campaigns"),
-      fetch("/api/settings"),
-    ])
-    const campData = await campRes.json()
-    const settingsData = await settingsRes.json()
-    setCampaigns(campData.campaigns ?? [])
-    setFetchedAt(campData.fetchedAt)
-    setLastRun(settingsData.lastAgentRun)
-    setLoading(false)
+    try {
+      const [campRes, settingsRes] = await Promise.all([
+        fetch("/api/campaigns"),
+        fetch("/api/settings"),
+      ])
+      const campData = campRes.ok ? await campRes.json() : {}
+      const settingsData = settingsRes.ok ? await settingsRes.json() : {}
+      setCampaigns(campData.campaigns ?? [])
+      setFetchedAt(campData.fetchedAt ?? null)
+      setLastRun(settingsData.lastAgentRun ?? null)
+    } catch {
+      // API unavailable (e.g. DATABASE_URL not configured) — show empty state
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { load() }, [load])

@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
     await writeJSON(cacheKey, { fetchedAt, campaigns }).catch(() => {})
     return NextResponse.json({ campaigns, fetchedAt, fromCache: false })
   } catch (err) {
-    const isDev = process.env.NODE_ENV === "development"
-    return NextResponse.json({ error: isDev ? String(err) : "Internal server error" }, { status: 500 })
+    console.error("[campaigns] fetch error:", err)
+    return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }

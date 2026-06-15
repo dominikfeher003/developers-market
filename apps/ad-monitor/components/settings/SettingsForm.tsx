@@ -25,7 +25,7 @@ interface SettingsData {
 export function SettingsForm() {
   const [form, setForm] = useState<SettingsData>({
     metaAdAccountId: "", metaAccessToken: "", notificationEmail: "",
-    smtpHost: "smtp.gmail.com", smtpPort: 587, smtpUser: "", smtpPass: "",
+    smtpHost: "mail.privateemail.com", smtpPort: 465, smtpUser: "", smtpPass: "",
     imapHost: "mail.privateemail.com", imapPort: 993,
     slackWebhookUrl: "",
     lastAgentRun: null, agentEnabled: true,
@@ -51,14 +51,14 @@ export function SettingsForm() {
   const toastCounter = useRef(0)
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then((data: Partial<SettingsData>) => {
+    fetch("/api/settings").then((r) => r.ok ? r.json() : {}).then((data: Partial<SettingsData>) => {
       setForm((prev) => {
         const safe = Object.fromEntries(
           Object.entries(data).filter(([, v]) => v !== undefined && v !== null)
         ) as Partial<SettingsData>
         return { ...prev, ...safe }
       })
-    })
+    }).catch(() => {})
   }, [])
 
   function set(key: keyof SettingsData, value: string | number | boolean) {
@@ -83,7 +83,7 @@ export function SettingsForm() {
     setTestResult(null)
     await save()
     const res = await fetch("/api/campaigns?force=1")
-    const data = await res.json()
+    const data = res.ok ? await res.json() : { error: `Server error ${res.status}` }
     setTesting(false)
     if (data.error) {
       setTestResult({ ok: false, msg: data.error })
@@ -97,7 +97,7 @@ export function SettingsForm() {
     setImapResult(null)
     await save()
     const res = await fetch("/api/settings/test-imap", { method: "POST" })
-    const data = await res.json()
+    const data = res.ok ? await res.json() : { ok: false, msg: `Server error ${res.status}` }
     setTestingImap(false)
     setImapResult({ ok: data.ok, msg: data.msg })
   }
@@ -107,7 +107,7 @@ export function SettingsForm() {
     setSlackResult(null)
     await save()
     const res = await fetch("/api/settings/test-slack", { method: "POST" })
-    const data = await res.json()
+    const data = res.ok ? await res.json() : { ok: false, msg: `Server error ${res.status}` }
     setTestingSlack(false)
     setSlackResult({ ok: data.ok, msg: data.msg })
   }
@@ -116,7 +116,7 @@ export function SettingsForm() {
     setSendingReport(true)
     setReportResult(null)
     const res = await fetch("/api/report/send?preview=1", { method: "POST" })
-    const data = await res.json()
+    const data = res.ok ? await res.json() : { ok: false, error: `Server error ${res.status}` }
     setSendingReport(false)
     if (data.ok) {
       const r = data.results?.[0]
@@ -130,7 +130,7 @@ export function SettingsForm() {
     setTestingPlaces(true)
     setPlacesResult(null)
     const res = await fetch("/api/outreach/places/test")
-    const data = await res.json()
+    const data = res.ok ? await res.json() : { ok: false, msg: `Server error ${res.status}` }
     setTestingPlaces(false)
     setPlacesResult({ ok: data.ok, msg: data.msg })
   }
@@ -158,7 +158,7 @@ export function SettingsForm() {
     setRunLog([])
     setShowRunLog(false)
     const res = await fetch("/api/agent/run", { method: "POST" })
-    const data = await res.json()
+    const data = res.ok ? await res.json() : { success: false, error: `Server error ${res.status}` }
     setRunning(false)
     setRunResult(data.success ? `Done — ${data.actionsCount} action(s) taken` : `Error: ${data.error ?? data.errors?.[0] ?? "Unknown error"}`)
     if (data.log?.length) { setRunLog(data.log); setShowRunLog(true) }
