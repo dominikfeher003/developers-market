@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, TrendingUp, BookOpen, Bell, X, FolderOpen,
   Receipt, LifeBuoy, Settings, Activity, ChevronLeft, ChevronRight,
-  Zap,
+  Zap, Megaphone,
 } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
@@ -24,6 +24,12 @@ const NAV_GROUPS = [
     items: [
       { href: "/dashboard/campaigns", label: "Campaigns", icon: TrendingUp },
       { href: "/dashboard/rules", label: "Rules", icon: Zap },
+    ],
+  },
+  {
+    label: "Growth",
+    items: [
+      { href: "/dashboard/outreach", label: "Outreach", icon: Megaphone },
     ],
   },
   {

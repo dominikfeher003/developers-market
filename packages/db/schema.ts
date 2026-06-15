@@ -90,6 +90,7 @@ export const campaignSnapshots = pgTable("campaign_snapshots", {
 
 export const potentialClients = pgTable("potential_clients", {
   id: text("id").primaryKey(),
+  clientId: text("client_id"),
   firstName: text("first_name").notNull().default(""),
   lastName: text("last_name").notNull().default(""),
   email: text("email").notNull(),
@@ -107,6 +108,7 @@ export const potentialClients = pgTable("potential_clients", {
 
 export const outreachHistory = pgTable("outreach_history", {
   id: text("id").primaryKey(),
+  clientId: text("client_id"),
   sentAt: text("sent_at").notNull(),
   toEmail: text("to_email").notNull(),
   toName: text("to_name").notNull().default(""),
