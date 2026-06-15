@@ -1,4 +1,4 @@
-import { streamText, tool, stepCountIs, generateText } from "ai"
+import { streamText, tool, stepCountIs, generateText, convertToModelMessages, UIMessage } from "ai"
 import { anthropic } from "@ai-sdk/anthropic"
 import { z } from "zod"
 import { NextResponse } from "next/server"
@@ -105,8 +105,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const body = await req.json() as { messages?: Parameters<typeof streamText>[0]["messages"] }
-  const messages = body.messages ?? []
+  const body = await req.json() as { messages?: Omit<UIMessage, "id">[] }
+  const messages = await convertToModelMessages(body.messages ?? [])
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),
