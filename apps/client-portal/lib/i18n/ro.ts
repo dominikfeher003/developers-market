@@ -243,6 +243,21 @@ export const ro: PortalTranslations = {
   outreach: {
     heading: "Prospectare",
     subtitle: "Găsește afaceri cu AI, scrie e-mailuri reci personalizate și trimite-le într-un singur flux.",
+    tabs: {
+      assistant: "Asistent AI",
+      inbox: "Inbox",
+    },
+    inbox: {
+      connecting: "Conectare la inbox...",
+      reply1: "{{n}} răspuns",
+      replyN: "{{n}} răspunsuri",
+      synced: "Ultima sincronizare {{when}}",
+      refresh: "Reîmprospătare",
+      errorTitle: "Nu s-a putut conecta la inbox",
+      errorHint: "Verifică credențialele IMAP în Setările Ad Monitor.",
+      noReplies: "Niciun răspuns încă",
+      noRepliesHint: "Vor apărea doar e-mailuri de la prospecți pe care i-ai contactat.",
+    },
     chat: {
       assistantName: "Asistent de prospectare",
       poweredBy: "Powered by Google Places + Claude AI",

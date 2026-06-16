@@ -245,6 +245,21 @@ export const en = {
   outreach: {
     heading: "Outreach",
     subtitle: "Find businesses with AI, write personalised cold emails, and send them in one flow.",
+    tabs: {
+      assistant: "AI Assistant",
+      inbox: "Inbox",
+    },
+    inbox: {
+      connecting: "Connecting to inbox...",
+      reply1: "{{n}} reply",
+      replyN: "{{n}} replies",
+      synced: "Last synced {{when}}",
+      refresh: "Refresh",
+      errorTitle: "Could not connect to inbox",
+      errorHint: "Check IMAP credentials in Ad Monitor Settings.",
+      noReplies: "No replies yet",
+      noRepliesHint: "Only emails from leads you've outreached to will appear here.",
+    },
     chat: {
       assistantName: "Outreach Assistant",
       poweredBy: "Powered by Google Places + Claude AI",

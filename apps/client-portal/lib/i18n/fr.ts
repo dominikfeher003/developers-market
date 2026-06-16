@@ -243,6 +243,21 @@ export const fr: PortalTranslations = {
   outreach: {
     heading: "Prospection",
     subtitle: "Trouvez des entreprises avec l'IA, rédigez des emails de prospection personnalisés et envoyez-les en un seul flux.",
+    tabs: {
+      assistant: "Assistant IA",
+      inbox: "Boîte de réception",
+    },
+    inbox: {
+      connecting: "Connexion à la boîte de réception...",
+      reply1: "{{n}} réponse",
+      replyN: "{{n}} réponses",
+      synced: "Dernière synchro {{when}}",
+      refresh: "Actualiser",
+      errorTitle: "Impossible de se connecter à la boîte",
+      errorHint: "Vérifiez les identifiants IMAP dans les Paramètres Ad Monitor.",
+      noReplies: "Aucune réponse pour l'instant",
+      noRepliesHint: "Seuls les e-mails de prospects contactés apparaîtront ici.",
+    },
     chat: {
       assistantName: "Assistant de prospection",
       poweredBy: "Powered by Google Places + Claude AI",

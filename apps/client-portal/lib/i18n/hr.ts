@@ -243,6 +243,21 @@ export const hr: PortalTranslations = {
   outreach: {
     heading: "Akvizicija",
     subtitle: "Pronađite tvrtke pomoću AI-a, pišite personalizirane hladne e-mailove i šaljite ih u jednom toku.",
+    tabs: {
+      assistant: "AI Asistent",
+      inbox: "Pristigla pošta",
+    },
+    inbox: {
+      connecting: "Spajanje na inbox...",
+      reply1: "{{n}} odgovor",
+      replyN: "{{n}} odgovora",
+      synced: "Zadnja sinkronizacija {{when}}",
+      refresh: "Osvježi",
+      errorTitle: "Ne mogu se spojiti na inbox",
+      errorHint: "Provjeri IMAP vjerodajnice u postavkama Ad Monitora.",
+      noReplies: "Još nema odgovora",
+      noRepliesHint: "Prikazat će se samo e-poruke od prospecata kojima ste se obratili.",
+    },
     chat: {
       assistantName: "Asistent za akviziciju",
       poweredBy: "Powered by Google Places + Claude AI",

@@ -243,6 +243,21 @@ export const de: PortalTranslations = {
   outreach: {
     heading: "Akquise",
     subtitle: "Finden Sie Unternehmen mit KI, schreiben Sie personalisierte Kalt-E-Mails und senden Sie sie in einem Schritt.",
+    tabs: {
+      assistant: "KI-Assistent",
+      inbox: "Posteingang",
+    },
+    inbox: {
+      connecting: "Verbindung zum Posteingang...",
+      reply1: "{{n}} Antwort",
+      replyN: "{{n}} Antworten",
+      synced: "Zuletzt synchronisiert {{when}}",
+      refresh: "Aktualisieren",
+      errorTitle: "Posteingang nicht erreichbar",
+      errorHint: "Prüfen Sie die IMAP-Zugangsdaten in den Ad Monitor Einstellungen.",
+      noReplies: "Noch keine Antworten",
+      noRepliesHint: "Hier erscheinen nur E-Mails von Leads, die Sie kontaktiert haben.",
+    },
     chat: {
       assistantName: "Akquise-Assistent",
       poweredBy: "Powered by Google Places + Claude AI",

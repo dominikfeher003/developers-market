@@ -243,6 +243,21 @@ export const es: PortalTranslations = {
   outreach: {
     heading: "Prospección",
     subtitle: "Encuentra empresas con IA, escribe emails en frío personalizados y envíalos en un solo flujo.",
+    tabs: {
+      assistant: "Asistente IA",
+      inbox: "Bandeja de entrada",
+    },
+    inbox: {
+      connecting: "Conectando a la bandeja...",
+      reply1: "{{n}} respuesta",
+      replyN: "{{n}} respuestas",
+      synced: "Última sincronización {{when}}",
+      refresh: "Actualizar",
+      errorTitle: "No se pudo conectar a la bandeja",
+      errorHint: "Verifica las credenciales IMAP en la Configuración de Ad Monitor.",
+      noReplies: "Sin respuestas aún",
+      noRepliesHint: "Solo aparecerán correos de prospectos a los que hayas contactado.",
+    },
     chat: {
       assistantName: "Asistente de prospección",
       poweredBy: "Powered by Google Places + Claude AI",

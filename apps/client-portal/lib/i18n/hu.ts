@@ -243,6 +243,21 @@ export const hu: PortalTranslations = {
   outreach: {
     heading: "Megkeresés",
     subtitle: "Találj vállalkozásokat AI segítségével, írj személyre szabott hideg e-maileket, és küld el őket egyetlen folyamatban.",
+    tabs: {
+      assistant: "AI Asszisztens",
+      inbox: "Beérkező",
+    },
+    inbox: {
+      connecting: "Csatlakozás a postaládához...",
+      reply1: "{{n}} válasz",
+      replyN: "{{n}} válasz",
+      synced: "Utoljára szinkronizálva: {{when}}",
+      refresh: "Frissítés",
+      errorTitle: "Nem sikerült csatlakozni a postaládához",
+      errorHint: "Ellenőrizd az IMAP beállításokat az Ad Monitor Beállításaiban.",
+      noReplies: "Még nincs válasz",
+      noRepliesHint: "Csak azok az e-mailek jelennek meg, akiknek már küldtél megkeresést.",
+    },
     chat: {
       assistantName: "Megkeresési asszisztens",
       poweredBy: "Google Places + Claude AI alapú",
