@@ -59,6 +59,13 @@ export function Nav() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
+          <a
+            href="https://app.developers-market.com"
+            className="text-sm text-zinc-400 hover:text-white transition-colors"
+          >
+            Client Login
+          </a>
+
           {/* Language switcher */}
           <div ref={langRef} className="relative">
             <button
@@ -124,6 +131,13 @@ export function Nav() {
               </button>
             ))}
           </div>
+          <a
+            href="https://app.developers-market.com"
+            className="block text-center text-sm text-zinc-400 hover:text-white transition-colors py-1"
+            onClick={() => setOpen(false)}
+          >
+            Client Login
+          </a>
           <Link href="/contact" onClick={() => setOpen(false)}>
             <Button className="w-full rounded-full bg-indigo-600 hover:bg-indigo-500 text-white">{t.nav.bookAudit}</Button>
           </Link>
