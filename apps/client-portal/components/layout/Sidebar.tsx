@@ -5,52 +5,73 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, TrendingUp, BookOpen, Bell, X, FolderOpen,
   Receipt, LifeBuoy, Settings, Activity, ChevronLeft, ChevronRight,
-  Zap, Megaphone, ArrowUpRight,
+  Zap, Megaphone, ArrowUpRight, Globe,
 } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { useState, useRef, useEffect } from "react"
+import { usePortalI18n, PORTAL_LOCALES } from "@/lib/i18n/context"
 
-const NAV_GROUPS = [
-  {
-    label: "Overview",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-      { href: "/dashboard/activity", label: "Activity", icon: Activity },
-    ],
-  },
-  {
-    label: "Ad Management",
-    items: [
-      { href: "/dashboard/campaigns", label: "Campaigns", icon: TrendingUp },
-      { href: "/dashboard/rules", label: "Rules", icon: Zap },
-    ],
-  },
-  {
-    label: "Growth",
-    items: [
-      { href: "/dashboard/outreach", label: "Outreach", icon: Megaphone },
-    ],
-  },
-  {
-    label: "Business",
-    items: [
-      { href: "/dashboard/projects", label: "Projects", icon: FolderOpen },
-      { href: "/dashboard/invoices", label: "Invoices", icon: Receipt },
-    ],
-  },
-  {
-    label: "Help",
-    items: [
-      { href: "/dashboard/support", label: "Support", icon: LifeBuoy },
-    ],
-  },
-]
+function LangSwitcher({ collapsed }: { collapsed: boolean }) {
+  const { locale, setLocale, t: _ } = usePortalI18n()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const current = PORTAL_LOCALES.find(l => l.code === locale)
 
-const BOTTOM_ITEMS = [
-  { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-]
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        title={collapsed ? current?.label : undefined}
+        className={cn(
+          "flex items-center gap-2 rounded-md text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors",
+          collapsed ? "justify-center w-10 py-2.5 mx-auto" : "px-3 py-2 w-full"
+        )}
+      >
+        <Globe className="h-3.5 w-3.5 shrink-0" />
+        {!collapsed && (
+          <>
+            <span>{current?.flag}</span>
+            <span>{current?.label}</span>
+          </>
+        )}
+        {collapsed && <span className="text-base leading-none">{current?.flag}</span>}
+      </button>
+
+      {open && (
+        <div className={cn(
+          "absolute bottom-full mb-1 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden z-50 w-40",
+          collapsed ? "left-full ml-2" : "left-0"
+        )}>
+          {PORTAL_LOCALES.map(l => (
+            <button
+              key={l.code}
+              onClick={() => { setLocale(l.code); setOpen(false) }}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors",
+                locale === l.code
+                  ? "bg-indigo-600/20 text-white"
+                  : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              )}
+            >
+              <span>{l.flag}</span>
+              <span>{l.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface Props {
   open: boolean
@@ -92,6 +113,49 @@ function NavItem({
 }
 
 export function Sidebar({ open, onClose, collapsed, onCollapse, clientName }: Props) {
+  const { t } = usePortalI18n()
+
+  const NAV_GROUPS = [
+    {
+      label: t.groups.overview,
+      items: [
+        { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard, exact: true },
+        { href: "/dashboard/activity", label: t.nav.activity, icon: Activity },
+      ],
+    },
+    {
+      label: t.groups.adManagement,
+      items: [
+        { href: "/dashboard/campaigns", label: t.nav.campaigns, icon: TrendingUp },
+        { href: "/dashboard/rules", label: t.nav.rules, icon: Zap },
+      ],
+    },
+    {
+      label: t.groups.growth,
+      items: [
+        { href: "/dashboard/outreach", label: t.nav.outreach, icon: Megaphone },
+      ],
+    },
+    {
+      label: t.groups.business,
+      items: [
+        { href: "/dashboard/projects", label: t.nav.projects, icon: FolderOpen },
+        { href: "/dashboard/invoices", label: t.nav.invoices, icon: Receipt },
+      ],
+    },
+    {
+      label: t.groups.help,
+      items: [
+        { href: "/dashboard/support", label: t.nav.support, icon: LifeBuoy },
+      ],
+    },
+  ]
+
+  const BOTTOM_ITEMS = [
+    { href: "/dashboard/notifications", label: t.nav.notifications, icon: Bell },
+    { href: "/dashboard/settings", label: t.nav.settings, icon: Settings },
+  ]
+
   return (
     <>
       {/* Mobile backdrop */}
@@ -194,13 +258,15 @@ export function Sidebar({ open, onClose, collapsed, onCollapse, clientName }: Pr
             {!collapsed && <span>developers-market.com</span>}
           </a>
 
+          <LangSwitcher collapsed={collapsed} />
+
           {/* Collapse toggle (desktop only) */}
           <button
             onClick={() => onCollapse(!collapsed)}
             className="hidden md:flex items-center justify-center w-full py-1.5 rounded-md text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800 transition-colors text-xs gap-1.5"
           >
             {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-            {!collapsed && <span>Collapse</span>}
+            {!collapsed && <span>{t.nav.collapse}</span>}
           </button>
 
           {/* Brand block — replaces "Account" label */}

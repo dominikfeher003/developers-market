@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Client } from "@/lib/types"
 import { ClientContext } from "@/lib/client-context"
+import { PortalLanguageProvider } from "@/lib/i18n/context"
 import { Sidebar } from "./Sidebar"
 import { TopBar } from "./TopBar"
 
@@ -31,6 +32,7 @@ export function AppShell({ client, children, alertCount = 0 }: Props) {
   const sidebarWidth = collapsed ? 64 : 240
 
   return (
+    <PortalLanguageProvider>
     <ClientContext.Provider value={client}>
       <div className="min-h-screen bg-background">
         <Sidebar
@@ -49,5 +51,6 @@ export function AppShell({ client, children, alertCount = 0 }: Props) {
         </div>
       </div>
     </ClientContext.Provider>
+    </PortalLanguageProvider>
   )
 }
