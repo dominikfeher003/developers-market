@@ -59,12 +59,9 @@ export function Nav() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <a
-            href="https://app.developers-market.com"
-            className="text-sm text-zinc-400 hover:text-white transition-colors"
-          >
-            Client Login
-          </a>
+          <Link href="/contact" className="text-sm text-zinc-400 hover:text-white transition-colors">
+            {t.nav.bookAudit}
+          </Link>
 
           {/* Language switcher */}
           <div ref={langRef} className="relative">
@@ -95,9 +92,9 @@ export function Nav() {
           </div>
 
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link href="/contact">
-              <Button className="rounded-full bg-indigo-600 hover:bg-indigo-500 text-white px-5">{t.nav.bookAudit}</Button>
-            </Link>
+            <a href="https://app.developers-market.com">
+              <Button className="rounded-full bg-indigo-600 hover:bg-indigo-500 text-white px-5">Client Login</Button>
+            </a>
           </motion.div>
         </div>
 
@@ -131,16 +128,16 @@ export function Nav() {
               </button>
             ))}
           </div>
-          <a
-            href="https://app.developers-market.com"
+          <Link
+            href="/contact"
             className="block text-center text-sm text-zinc-400 hover:text-white transition-colors py-1"
             onClick={() => setOpen(false)}
           >
-            Client Login
-          </a>
-          <Link href="/contact" onClick={() => setOpen(false)}>
-            <Button className="w-full rounded-full bg-indigo-600 hover:bg-indigo-500 text-white">{t.nav.bookAudit}</Button>
+            {t.nav.bookAudit}
           </Link>
+          <a href="https://app.developers-market.com" onClick={() => setOpen(false)}>
+            <Button className="w-full rounded-full bg-indigo-600 hover:bg-indigo-500 text-white">Client Login</Button>
+          </a>
         </div>
       )}
     </header>
