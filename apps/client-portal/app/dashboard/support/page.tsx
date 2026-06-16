@@ -1,5 +1,7 @@
 import { StatusBadge } from "@/components/ui/status-badge"
 import { MessageSquare, Plus } from "lucide-react"
+import { getPortalT } from "@/lib/i18n/server"
+import { tr } from "@/lib/i18n/en"
 
 type Ticket = {
   id: string
@@ -55,13 +57,6 @@ const TICKETS: Ticket[] = [
   },
 ]
 
-const STATUS_MAP = {
-  open: { label: "Open", variant: "info" as const },
-  "in-progress": { label: "In Progress", variant: "warning" as const },
-  resolved: { label: "Resolved", variant: "success" as const },
-  closed: { label: "Closed", variant: "neutral" as const },
-}
-
 const PRIORITY_DOTS: Record<Ticket["priority"], string> = {
   low: "bg-zinc-400",
   medium: "bg-amber-400",
@@ -79,29 +74,42 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-export default function SupportPage() {
+export default async function SupportPage() {
+  const t = await getPortalT()
+
+  const STATUS_MAP = {
+    open: { label: t.support.status.open, variant: "info" as const },
+    "in-progress": { label: t.support.status.inProgress, variant: "warning" as const },
+    resolved: { label: t.support.status.resolved, variant: "success" as const },
+    closed: { label: t.support.status.closed, variant: "neutral" as const },
+  }
+
   const open = TICKETS.filter((t) => t.status === "open" || t.status === "in-progress")
   const closed = TICKETS.filter((t) => t.status === "resolved" || t.status === "closed")
 
-  function TicketRow({ t }: { t: Ticket }) {
-    const s = STATUS_MAP[t.status]
+  const openCountStr = open.length === 1
+    ? tr(t.support.count1, { n: open.length })
+    : tr(t.support.countN, { n: open.length })
+
+  function TicketRow({ ticket }: { ticket: Ticket }) {
+    const s = STATUS_MAP[ticket.status]
     return (
       <div className="flex items-start gap-4 px-5 py-4 hover:bg-muted/30 transition-colors border-t border-border first:border-0 cursor-pointer">
-        <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${PRIORITY_DOTS[t.priority]}`} title={`Priority: ${t.priority}`} />
+        <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${PRIORITY_DOTS[ticket.priority]}`} title={`Priority: ${ticket.priority}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-muted-foreground">{t.number}</span>
+                <span className="text-xs font-mono text-muted-foreground">{ticket.number}</span>
                 <span className="text-xs text-muted-foreground">·</span>
-                <span className="text-xs text-muted-foreground">{t.category}</span>
+                <span className="text-xs text-muted-foreground">{ticket.category}</span>
               </div>
-              <p className="text-sm font-medium text-foreground mt-0.5 leading-snug">{t.title}</p>
+              <p className="text-sm font-medium text-foreground mt-0.5 leading-snug">{ticket.title}</p>
             </div>
             <StatusBadge variant={s.variant} dot>{s.label}</StatusBadge>
           </div>
           <p className="text-xs text-muted-foreground mt-1.5">
-            Opened {timeAgo(t.created)} · Updated {timeAgo(t.updated)}
+            {t.support.opened} {timeAgo(ticket.created)} · {t.support.updated} {timeAgo(ticket.updated)}
           </p>
         </div>
       </div>
@@ -112,38 +120,38 @@ export default function SupportPage() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Support</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">{open.length} open ticket{open.length !== 1 ? "s" : ""}</p>
+          <h2 className="text-xl font-bold text-foreground">{t.support.heading}</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{openCountStr}</p>
         </div>
         <button className="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
           <Plus className="h-4 w-4" />
-          New Ticket
+          {t.support.newTicket}
         </button>
       </div>
 
       {open.length > 0 && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-border">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Open</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.support.sectionOpen}</p>
           </div>
-          {open.map((t) => <TicketRow key={t.id} t={t} />)}
+          {open.map((ticket) => <TicketRow key={ticket.id} ticket={ticket} />)}
         </div>
       )}
 
       {closed.length > 0 && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-border">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Closed</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.support.sectionClosed}</p>
           </div>
-          {closed.map((t) => <TicketRow key={t.id} t={t} />)}
+          {closed.map((ticket) => <TicketRow key={ticket.id} ticket={ticket} />)}
         </div>
       )}
 
       {TICKETS.length === 0 && (
         <div className="bg-card border border-border rounded-xl p-12 text-center">
           <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm font-medium text-foreground">No support tickets</p>
-          <p className="text-sm text-muted-foreground mt-1">Create a ticket to get help from your account team.</p>
+          <p className="text-sm font-medium text-foreground">{t.support.noTickets}</p>
+          <p className="text-sm text-muted-foreground mt-1">{t.support.noTicketsDesc}</p>
         </div>
       )}
     </div>

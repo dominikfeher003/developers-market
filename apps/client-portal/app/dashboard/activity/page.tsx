@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { readAlerts, readRules } from "@/lib/storage"
 import { timeAgo } from "@/lib/utils"
 import { PauseCircle, RotateCcw, TrendingUp, Zap, FileText, FolderOpen, CreditCard, MessageSquare } from "lucide-react"
+import { getPortalT } from "@/lib/i18n/server"
 
 type TimelineEvent = {
   id: string
@@ -13,13 +14,6 @@ type TimelineEvent = {
   iconBg: string
   iconColor: string
 }
-
-const ACTION_META = {
-  pause: { icon: PauseCircle, iconBg: "bg-red-100 dark:bg-red-950/40", iconColor: "text-red-600 dark:text-red-400", label: "Campaign paused" },
-  resume: { icon: RotateCcw, iconBg: "bg-emerald-100 dark:bg-emerald-950/40", iconColor: "text-emerald-600 dark:text-emerald-400", label: "Campaign resumed" },
-  scale_budget: { icon: TrendingUp, iconBg: "bg-blue-100 dark:bg-blue-950/40", iconColor: "text-blue-600 dark:text-blue-400", label: "Budget scaled" },
-  notify_only: { icon: Zap, iconBg: "bg-indigo-100 dark:bg-indigo-950/40", iconColor: "text-indigo-600 dark:text-indigo-400", label: "Alert triggered" },
-} as const
 
 const MOCK_EVENTS: TimelineEvent[] = [
   {
@@ -60,13 +54,13 @@ const MOCK_EVENTS: TimelineEvent[] = [
   },
 ]
 
-function groupByDate(events: TimelineEvent[]) {
+function groupByDate(events: TimelineEvent[], todayLabel: string, yesterdayLabel: string) {
   const today = new Date().toDateString()
   const yesterday = new Date(Date.now() - 86400000).toDateString()
   const groups: Record<string, TimelineEvent[]> = {}
   for (const e of events) {
     const d = new Date(e.timestamp).toDateString()
-    const label = d === today ? "Today" : d === yesterday ? "Yesterday" : new Date(e.timestamp).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+    const label = d === today ? todayLabel : d === yesterday ? yesterdayLabel : new Date(e.timestamp).toLocaleDateString("en-US", { month: "long", day: "numeric" })
     if (!groups[label]) groups[label] = []
     groups[label].push(e)
   }
@@ -74,15 +68,22 @@ function groupByDate(events: TimelineEvent[]) {
 }
 
 export default async function ActivityPage() {
-  const client = await getUserClient()
+  const [client, t] = await Promise.all([getUserClient(), getPortalT()])
   if (!client) redirect("/dashboard")
+
+  const ACTION_META = {
+    pause: { icon: PauseCircle, iconBg: "bg-red-100 dark:bg-red-950/40", iconColor: "text-red-600 dark:text-red-400", label: t.activity.actions.pause },
+    resume: { icon: RotateCcw, iconBg: "bg-emerald-100 dark:bg-emerald-950/40", iconColor: "text-emerald-600 dark:text-emerald-400", label: t.activity.actions.resume },
+    scale_budget: { icon: TrendingUp, iconBg: "bg-blue-100 dark:bg-blue-950/40", iconColor: "text-blue-600 dark:text-blue-400", label: t.activity.actions.scale_budget },
+    notify_only: { icon: Zap, iconBg: "bg-indigo-100 dark:bg-indigo-950/40", iconColor: "text-indigo-600 dark:text-indigo-400", label: t.activity.actions.notify_only },
+  } as const
 
   const [allAlerts, allRules] = await Promise.all([readAlerts(), readRules()])
   const alertEvents: TimelineEvent[] = allAlerts
     .filter((a) => allRules.some((r) => r.id === a.ruleId && r.clientId === client.id))
     .slice(0, 20)
     .map((a) => {
-      const meta = ACTION_META[a.action] ?? ACTION_META.notify_only
+      const meta = ACTION_META[a.action as keyof typeof ACTION_META] ?? ACTION_META.notify_only
       return {
         id: a.id,
         title: meta.label + " · " + a.campaignName,
@@ -98,13 +99,13 @@ export default async function ActivityPage() {
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   )
 
-  const groups = groupByDate(allEvents)
+  const groups = groupByDate(allEvents, t.activity.today, t.activity.yesterday)
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h2 className="text-xl font-bold text-foreground">Activity</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">Everything that&apos;s happened on your account</p>
+        <h2 className="text-xl font-bold text-foreground">{t.activity.heading}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{t.activity.subtitle}</p>
       </div>
 
       <div className="space-y-8">

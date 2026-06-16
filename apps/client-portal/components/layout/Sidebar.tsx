@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, TrendingUp, BookOpen, Bell, X, FolderOpen,
   Receipt, LifeBuoy, Settings, Activity, ChevronLeft, ChevronRight,
-  Zap, Megaphone, ArrowUpRight, Globe,
+  Zap, Megaphone, Globe,
 } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
@@ -242,21 +242,6 @@ export function Sidebar({ open, onClose, collapsed, onCollapse, clientName }: Pr
               />
             ))}
           </div>
-
-          {/* Back to marketing site */}
-          <a
-            href="https://developers-market.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "flex items-center gap-2 rounded-md text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors mb-1",
-              collapsed ? "justify-center px-0 py-2.5 mx-auto w-10" : "px-3 py-2"
-            )}
-            title={collapsed ? "developers-market.com" : undefined}
-          >
-            <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
-            {!collapsed && <span>developers-market.com</span>}
-          </a>
 
           <LangSwitcher collapsed={collapsed} />
 

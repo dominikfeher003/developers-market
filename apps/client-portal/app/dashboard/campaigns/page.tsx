@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState } from "@/components/ui/empty-state"
 import { TrendingUp } from "lucide-react"
+import { getPortalT } from "@/lib/i18n/server"
+import { tr } from "@/lib/i18n/en"
 
 function PlatformBadge({ platform }: { platform?: "meta" | "tiktok" }) {
   if (platform === "tiktok") {
@@ -45,7 +47,7 @@ async function buildCampaignData(campaigns: Campaign[], token: string, isTikTok:
 }
 
 export default async function CampaignsPage() {
-  const client = await getUserClient()
+  const [client, t] = await Promise.all([getUserClient(), getPortalT()])
   if (!client) redirect("/dashboard")
 
   const [metaRaw, tiktokRaw] = await Promise.all([
@@ -70,7 +72,7 @@ export default async function CampaignsPage() {
   const paused = data.filter((c) => c.status !== "ACTIVE")
 
   if (data.length === 0) {
-    return <EmptyState icon={TrendingUp} title="No campaigns found" description="Your ad campaigns will appear here once they're set up." />
+    return <EmptyState icon={TrendingUp} title={t.campaigns.noData} description={t.campaigns.noDataDesc} />
   }
 
   type CampaignRow = typeof data[0]
@@ -87,7 +89,7 @@ export default async function CampaignsPage() {
         </td>
         <td className="py-3.5 px-4">
           <StatusBadge variant={c.status === "ACTIVE" ? "success" : "neutral"} dot>
-            {c.status === "ACTIVE" ? "Active" : "Paused"}
+            {c.status === "ACTIVE" ? t.campaigns.active : t.campaigns.paused}
           </StatusBadge>
         </td>
         <td className="py-3.5 px-4 tabular-nums text-sm text-foreground text-right">
@@ -119,17 +121,27 @@ export default async function CampaignsPage() {
   }
 
   function CampaignTable({ items, label }: { items: CampaignRow[]; label: string }) {
+    const countStr = items.length === 1
+      ? tr(t.campaigns.count1, { n: items.length })
+      : tr(t.campaigns.countN, { n: items.length })
     return (
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">{label}</h3>
-          <span className="text-xs text-muted-foreground">{items.length} campaign{items.length !== 1 ? "s" : ""}</span>
+          <span className="text-xs text-muted-foreground">{countStr}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                {["Campaign", "Status", "Spend (7d)", "ROAS", "Impressions", "Daily Budget"].map((h, i) => (
+                {[
+                  t.campaigns.headers.campaign,
+                  t.campaigns.headers.status,
+                  t.campaigns.headers.spend,
+                  t.campaigns.headers.roas,
+                  t.campaigns.headers.impressions,
+                  t.campaigns.headers.dailyBudget,
+                ].map((h, i) => (
                   <th key={h} className={cn("py-2.5 px-4 text-xs font-medium text-muted-foreground", i > 1 && i < 5 ? "text-right" : "text-left")}>{h}</th>
                 ))}
               </tr>
@@ -146,19 +158,19 @@ export default async function CampaignsPage() {
   const hasTikTok = tiktokData.length > 0
   const platformSummary = hasTikTok
     ? `${metaData.length} Meta · ${tiktokData.length} TikTok`
-    : `${data.length} campaigns`
+    : tr(data.length === 1 ? t.campaigns.count1 : t.campaigns.countN, { n: data.length })
 
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h2 className="text-xl font-bold text-foreground">Campaigns</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">{platformSummary} · 7-day performance</p>
+        <h2 className="text-xl font-bold text-foreground">{t.campaigns.heading}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{platformSummary} · {t.campaigns.sevenDayPerf}</p>
       </div>
 
       {hasTikTok && (
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Platforms active:</span>
+            <span>{t.campaigns.platformsActive}</span>
             <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-1 rounded">
               Meta · FB + IG
             </span>
@@ -169,8 +181,8 @@ export default async function CampaignsPage() {
         </div>
       )}
 
-      {active.length > 0 && <CampaignTable items={active} label="Active" />}
-      {paused.length > 0 && <CampaignTable items={paused} label="Paused" />}
+      {active.length > 0 && <CampaignTable items={active} label={t.campaigns.active} />}
+      {paused.length > 0 && <CampaignTable items={paused} label={t.campaigns.paused} />}
     </div>
   )
 }

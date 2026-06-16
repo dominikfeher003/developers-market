@@ -48,6 +48,7 @@ export function PortalLanguageProvider({ children }: { children: ReactNode }) {
   function setLocale(l: PortalLocale) {
     setLocaleState(l)
     localStorage.setItem("portal_lang", l)
+    document.cookie = `portal_lang=${l}; path=/; max-age=31536000; SameSite=Lax`
   }
 
   return (

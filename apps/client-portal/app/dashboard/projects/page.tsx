@@ -1,5 +1,7 @@
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Calendar, ArrowUpRight } from "lucide-react"
+import { getPortalT } from "@/lib/i18n/server"
+import { tr } from "@/lib/i18n/en"
 
 type Project = {
   id: string
@@ -68,20 +70,22 @@ const PROJECTS: Project[] = [
   },
 ]
 
-const STATUS_MAP: Record<Project["status"], { label: string; variant: "success" | "info" | "neutral" | "warning" }> = {
-  active: { label: "Active", variant: "success" },
-  review: { label: "In Review", variant: "info" },
-  completed: { label: "Completed", variant: "neutral" },
-  "on-hold": { label: "On Hold", variant: "warning" },
-}
+export default async function ProjectsPage() {
+  const t = await getPortalT()
 
-export default function ProjectsPage() {
+  const STATUS_MAP: Record<Project["status"], { label: string; variant: "success" | "info" | "neutral" | "warning" }> = {
+    active: { label: t.projects.status.active, variant: "success" },
+    review: { label: t.projects.status.review, variant: "info" },
+    completed: { label: t.projects.status.completed, variant: "neutral" },
+    "on-hold": { label: t.projects.status.onHold, variant: "warning" },
+  }
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Projects</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">{PROJECTS.length} active engagements</p>
+          <h2 className="text-xl font-bold text-foreground">{t.projects.heading}</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{tr(t.projects.subtitle, { n: PROJECTS.length })}</p>
         </div>
       </div>
 
@@ -101,7 +105,7 @@ export default function ProjectsPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Progress</span>
+                  <span>{t.projects.progress}</span>
                   <span className="font-medium text-foreground">{p.progress}%</span>
                 </div>
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden">

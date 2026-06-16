@@ -1,10 +1,14 @@
+"use client"
+
 import { Campaign } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "@/components/ui/status-badge"
+import { usePortalI18n } from "@/lib/i18n/context"
 
 interface Props { campaigns: Campaign[] }
 
 export function CampaignMiniList({ campaigns }: Props) {
+  const { t } = usePortalI18n()
   const top = [...campaigns]
     .sort((a, b) => b.insights.last7d.purchase_roas - a.insights.last7d.purchase_roas)
     .slice(0, 5)
@@ -13,7 +17,7 @@ export function CampaignMiniList({ campaigns }: Props) {
 
   return (
     <div className="bg-card border border-border rounded-xl p-5">
-      <h3 className="text-sm font-semibold text-foreground mb-4">Top Campaigns by ROAS</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-4">{t.dashboard.topCampaigns}</h3>
       <div className="space-y-3">
         {top.map((c) => {
           const roas = c.insights.last7d.purchase_roas
@@ -25,7 +29,7 @@ export function CampaignMiniList({ campaigns }: Props) {
               }} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">${c.insights.last7d.spend.toFixed(0)} spend · 7d</p>
+                <p className="text-xs text-muted-foreground mt-0.5">${c.insights.last7d.spend.toFixed(0)} {t.dashboard.spend7d}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <StatusBadge variant={c.status === "ACTIVE" ? "success" : "neutral"} dot>

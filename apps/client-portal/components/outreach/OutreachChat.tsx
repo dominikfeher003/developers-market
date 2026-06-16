@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, isToolUIPart, isTextUIPart } from "ai"
 import { Send, Search, Mail, Loader2, MapPin, Phone, Globe, Star, X } from "lucide-react"
+import { usePortalI18n } from "@/lib/i18n/context"
 
 type Place = {
   id: string
@@ -26,6 +27,7 @@ function PlaceCard({
   place: Place
   onWriteEmail: (place: Place) => void
 }) {
+  const { t } = usePortalI18n()
   return (
     <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3 space-y-1.5">
       <div className="flex items-start justify-between gap-2">
@@ -67,7 +69,7 @@ function PlaceCard({
         className="mt-1 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/60 rounded-md py-1.5 transition-colors"
       >
         <Mail className="h-3 w-3" />
-        Write email
+        {t.outreach.chat.writeEmail}
       </button>
     </div>
   )
@@ -84,6 +86,7 @@ function EmailPreviewCard({
 }) {
   const [to, setTo] = useState("")
   const [toName, setToName] = useState("")
+  const { t } = usePortalI18n()
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState("")
@@ -92,7 +95,7 @@ function EmailPreviewCard({
   const [editing, setEditing] = useState(false)
 
   async function handleSend() {
-    if (!to.trim()) { setError("Enter recipient email"); return }
+    if (!to.trim()) { setError(t.outreach.chat.enterRecipient); return }
     setSending(true)
     setError("")
     try {
@@ -105,7 +108,7 @@ function EmailPreviewCard({
       if (data.success) setSent(true)
       else setError(data.error ?? "Failed to send")
     } catch {
-      setError("Network error")
+      setError(t.outreach.chat.networkError)
     } finally {
       setSending(false)
     }
@@ -114,7 +117,7 @@ function EmailPreviewCard({
   if (sent) {
     return (
       <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-3 text-sm text-green-400">
-        Email sent to {to}
+        {t.outreach.chat.sentTo} {to}
       </div>
     )
   }
@@ -122,17 +125,17 @@ function EmailPreviewCard({
   return (
     <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3 space-y-2.5">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Email Draft</p>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">{t.outreach.chat.emailDraft}</p>
         <button
           onClick={() => setEditing(!editing)}
           className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
         >
-          {editing ? "Done" : "Edit"}
+          {editing ? t.outreach.chat.done : t.outreach.chat.edit}
         </button>
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[11px] text-zinc-500">Subject</p>
+        <p className="text-[11px] text-zinc-500">{t.outreach.chat.emailSubject}</p>
         {editing ? (
           <input
             value={subject}
@@ -145,7 +148,7 @@ function EmailPreviewCard({
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[11px] text-zinc-500">Body</p>
+        <p className="text-[11px] text-zinc-500">{t.outreach.chat.emailBody}</p>
         {editing ? (
           <textarea
             value={body}
@@ -159,12 +162,12 @@ function EmailPreviewCard({
       </div>
 
       <div className="border-t border-zinc-700 pt-2.5 space-y-2">
-        <p className="text-[11px] text-zinc-500">Send to</p>
+        <p className="text-[11px] text-zinc-500">{t.outreach.chat.sendTo}</p>
         <div className="flex gap-2">
           <input
             value={toName}
             onChange={(e) => setToName(e.target.value)}
-            placeholder="Contact name (optional)"
+            placeholder={t.outreach.chat.contactName}
             className="flex-1 bg-zinc-900 border border-zinc-600 rounded px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-indigo-500 placeholder:text-zinc-600"
           />
           <input
@@ -182,7 +185,7 @@ function EmailPreviewCard({
           className="w-full flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-md py-2 transition-colors"
         >
           {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-          {sending ? "Sending..." : "Send Email"}
+          {sending ? t.outreach.chat.sending : t.outreach.chat.sendEmail}
         </button>
       </div>
     </div>
@@ -202,6 +205,7 @@ export function OutreachChat() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  const { t } = usePortalI18n()
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/outreach/chat" }),
   })
@@ -244,13 +248,13 @@ export function OutreachChat() {
           <Search className="h-4 w-4 text-white" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-zinc-100">Outreach Assistant</p>
-          <p className="text-xs text-zinc-500">Powered by Google Places + Claude AI</p>
+          <p className="text-sm font-semibold text-zinc-100">{t.outreach.chat.assistantName}</p>
+          <p className="text-xs text-zinc-500">{t.outreach.chat.poweredBy}</p>
         </div>
         {isStreaming && (
           <div className="ml-auto flex items-center gap-1.5 text-xs text-zinc-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Thinking...
+            {t.outreach.chat.thinking}
           </div>
         )}
       </div>
@@ -260,8 +264,8 @@ export function OutreachChat() {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-6 py-8">
             <div className="text-center space-y-1">
-              <p className="text-zinc-300 font-medium">Find businesses. Write emails. Send them.</p>
-              <p className="text-zinc-500 text-sm">Describe who you want to reach and where.</p>
+              <p className="text-zinc-300 font-medium">{t.outreach.chat.emptyHeadline}</p>
+              <p className="text-zinc-500 text-sm">{t.outreach.chat.emptySubtitle}</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
               {STARTERS.map((s) => (
@@ -306,7 +310,7 @@ export function OutreachChat() {
                     return (
                       <div key={i} className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-900 rounded-lg px-3 py-2">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        {toolName === "searchPlaces" ? "Searching Google Places..." : "Drafting email..."}
+                        {toolName === "searchPlaces" ? t.outreach.chat.searchingPlaces : t.outreach.chat.draftingEmail}
                       </div>
                     )
                   }
@@ -324,7 +328,7 @@ export function OutreachChat() {
                       const places = output.places ?? []
                       return (
                         <div key={i} className="w-full space-y-2">
-                          <p className="text-xs text-zinc-500">{places.length} businesses found</p>
+                          <p className="text-xs text-zinc-500">{places.length} {t.outreach.chat.businessesFound}</p>
                           <div className="grid gap-2">
                             {places.map((place) => (
                               <PlaceCard key={place.id} place={place} onWriteEmail={handleWriteEmail} />
@@ -391,7 +395,7 @@ export function OutreachChat() {
           </button>
         </form>
         <p className="text-[10px] text-zinc-700 mt-1.5 text-center">
-          Enter to send · Shift+Enter for new line
+          {t.outreach.chat.enterToSend}
         </p>
       </div>
     </div>

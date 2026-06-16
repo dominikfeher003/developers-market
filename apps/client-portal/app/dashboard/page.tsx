@@ -11,6 +11,7 @@ import { DailyInsight } from "@/lib/types"
 import { timeAgo } from "@/lib/utils"
 import { Zap, TrendingUp, PauseCircle, RotateCcw } from "lucide-react"
 import { getDb, campaignSnapshots, eq, gte } from "@dm/db"
+import { getPortalT } from "@/lib/i18n/server"
 
 const ACTION_ICONS = {
   pause: PauseCircle,
@@ -27,7 +28,7 @@ const ACTION_COLORS = {
 } as const
 
 export default async function DashboardPage() {
-  const client = await getUserClient()
+  const [client, t] = await Promise.all([getUserClient(), getPortalT()])
   if (!client) redirect("/")
 
   // Budget pacing: query this month's snapshots
@@ -126,7 +127,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <div>
         <Greeting name={client.name.split(" ")[0]} />
-        <p className="text-sm text-muted-foreground mt-0.5">{today} · Here&apos;s how your campaigns are performing.</p>
+        <p className="text-sm text-muted-foreground mt-0.5">{today} · {t.dashboard.campaignsPerforming}</p>
       </div>
 
       <StatsGrid campaigns={campaignsWithInsights} accountInfo={accountInfo} metricSeries={metricSeries} />
@@ -145,7 +146,7 @@ export default async function DashboardPage() {
 
         {clientAlerts.length > 0 && (
           <div className="bg-card border border-border rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Recent Activity</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-4">{t.dashboard.recentActivity}</h3>
             <div className="space-y-3">
               {clientAlerts.map((a) => {
                 const Icon = ACTION_ICONS[a.action] ?? Zap

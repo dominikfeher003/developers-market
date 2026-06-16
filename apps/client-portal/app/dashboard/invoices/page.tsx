@@ -1,5 +1,7 @@
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Download } from "lucide-react"
+import { getPortalT } from "@/lib/i18n/server"
+import { tr } from "@/lib/i18n/en"
 
 type Invoice = {
   id: string
@@ -22,12 +24,6 @@ const INVOICES: Invoice[] = [
   { id: "i8", number: "INV-2024-SETUP", date: "2024-11-01", dueDate: "2024-11-15", amount: 50000, status: "overdue", description: "One-time account setup & onboarding" },
 ]
 
-const STATUS_MAP = {
-  paid: { label: "Paid", variant: "success" as const },
-  pending: { label: "Pending", variant: "warning" as const },
-  overdue: { label: "Overdue", variant: "danger" as const },
-}
-
 function fmt(cents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(cents / 100)
 }
@@ -35,7 +31,15 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
-export default function InvoicesPage() {
+export default async function InvoicesPage() {
+  const t = await getPortalT()
+
+  const STATUS_MAP = {
+    paid: { label: t.invoices.status.paid, variant: "success" as const },
+    pending: { label: t.invoices.status.pending, variant: "warning" as const },
+    overdue: { label: t.invoices.status.overdue, variant: "danger" as const },
+  }
+
   const paid = INVOICES.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0)
   const pending = INVOICES.filter((i) => i.status === "pending").reduce((s, i) => s + i.amount, 0)
   const overdue = INVOICES.filter((i) => i.status === "overdue").reduce((s, i) => s + i.amount, 0)
@@ -43,16 +47,15 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h2 className="text-xl font-bold text-foreground">Invoices</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">{INVOICES.length} invoices total</p>
+        <h2 className="text-xl font-bold text-foreground">{t.invoices.heading}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{tr(t.invoices.totalCount, { n: INVOICES.length })}</p>
       </div>
 
-      {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total Paid", value: fmt(paid), color: "text-emerald-600 dark:text-emerald-400" },
-          { label: "Pending", value: fmt(pending), color: "text-amber-600 dark:text-amber-400" },
-          { label: "Overdue", value: fmt(overdue), color: overdue > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground" },
+          { label: t.invoices.totalPaid, value: fmt(paid), color: "text-emerald-600 dark:text-emerald-400" },
+          { label: t.invoices.pending, value: fmt(pending), color: "text-amber-600 dark:text-amber-400" },
+          { label: t.invoices.overdue, value: fmt(overdue), color: overdue > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground" },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-card border border-border rounded-xl p-4">
             <p className="text-xs text-muted-foreground font-medium">{label}</p>
@@ -61,14 +64,21 @@ export default function InvoicesPage() {
         ))}
       </div>
 
-      {/* Table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                {["Invoice", "Date", "Due Date", "Description", "Amount", "Status", ""].map((h) => (
-                  <th key={h} className={`py-3 px-4 text-xs font-medium text-muted-foreground ${h === "Amount" ? "text-right" : "text-left"}`}>{h}</th>
+                {[
+                  t.invoices.headers.invoice,
+                  t.invoices.headers.date,
+                  t.invoices.headers.dueDate,
+                  t.invoices.headers.description,
+                  t.invoices.headers.amount,
+                  t.invoices.headers.status,
+                  "",
+                ].map((h) => (
+                  <th key={h} className={`py-3 px-4 text-xs font-medium text-muted-foreground ${h === t.invoices.headers.amount ? "text-right" : "text-left"}`}>{h}</th>
                 ))}
               </tr>
             </thead>

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useTheme } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 import { User, Bell, Palette, Monitor, Sun, Moon } from "lucide-react"
+import { usePortalI18n } from "@/lib/i18n/context"
 
 type Tab = "profile" | "notifications" | "appearance"
 
@@ -16,6 +17,7 @@ interface Props {
 export function SettingsClient({ clientName, userEmail, userName }: Props) {
   const [tab, setTab] = useState<Tab>("profile")
   const { theme, setTheme } = useTheme()
+  const { t } = usePortalI18n()
 
   const [notifSettings, setNotifSettings] = useState({
     ruleAlerts: true,
@@ -25,14 +27,13 @@ export function SettingsClient({ clientName, userEmail, userName }: Props) {
   })
 
   const tabs = [
-    { id: "profile" as Tab, label: "Profile", icon: User },
-    { id: "notifications" as Tab, label: "Notifications", icon: Bell },
-    { id: "appearance" as Tab, label: "Appearance", icon: Palette },
+    { id: "profile" as Tab, label: t.settings.tabs.profile, icon: User },
+    { id: "notifications" as Tab, label: t.settings.tabs.notifications, icon: Bell },
+    { id: "appearance" as Tab, label: t.settings.tabs.appearance, icon: Palette },
   ]
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
-      {/* Tab bar */}
       <div className="border-b border-border flex">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
@@ -55,9 +56,9 @@ export function SettingsClient({ clientName, userEmail, userName }: Props) {
         {tab === "profile" && (
           <div className="space-y-5">
             {[
-              { label: "Full Name", value: userName },
-              { label: "Email Address", value: userEmail },
-              { label: "Company", value: clientName },
+              { label: t.settings.profile.fullName, value: userName },
+              { label: t.settings.profile.email, value: userEmail },
+              { label: t.settings.profile.company, value: clientName },
             ].map(({ label, value }) => (
               <div key={label}>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5">{label}</label>
@@ -66,18 +67,18 @@ export function SettingsClient({ clientName, userEmail, userName }: Props) {
                 </div>
               </div>
             ))}
-            <p className="text-xs text-muted-foreground">Profile information is managed by your account admin. Contact your account manager to make changes.</p>
+            <p className="text-xs text-muted-foreground">{t.settings.profile.managed}</p>
           </div>
         )}
 
         {tab === "notifications" && (
           <div className="space-y-5">
-            <p className="text-sm text-muted-foreground">Choose which notifications you&apos;d like to receive by email.</p>
+            <p className="text-sm text-muted-foreground">{t.settings.notifSettings.intro}</p>
             {[
-              { key: "ruleAlerts" as const, label: "Rule alerts", description: "Get notified when an automation rule triggers" },
-              { key: "weeklyReport" as const, label: "Weekly performance report", description: "Summary of your campaigns every Monday" },
-              { key: "invoices" as const, label: "Invoice notifications", description: "Emails when new invoices are issued or due" },
-              { key: "budgetWarnings" as const, label: "Budget warnings", description: "Alerts when campaigns approach their daily budget" },
+              { key: "ruleAlerts" as const, label: t.settings.notifSettings.ruleAlerts, description: t.settings.notifSettings.ruleAlertsDesc },
+              { key: "weeklyReport" as const, label: t.settings.notifSettings.weeklyReport, description: t.settings.notifSettings.weeklyReportDesc },
+              { key: "invoices" as const, label: t.settings.notifSettings.invoices, description: t.settings.notifSettings.invoicesDesc },
+              { key: "budgetWarnings" as const, label: t.settings.notifSettings.budgetWarnings, description: t.settings.notifSettings.budgetWarningsDesc },
             ].map(({ key, label, description }) => (
               <div key={key} className="flex items-start justify-between gap-4">
                 <div>
@@ -103,12 +104,12 @@ export function SettingsClient({ clientName, userEmail, userName }: Props) {
 
         {tab === "appearance" && (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Choose your preferred color theme.</p>
+            <p className="text-sm text-muted-foreground">{t.settings.appearance.intro}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: "light" as const, label: "Light", icon: Sun },
-                { value: "dark" as const, label: "Dark", icon: Moon },
-                { value: "system" as const, label: "System", icon: Monitor },
+                { value: "light" as const, label: t.settings.appearance.light, icon: Sun },
+                { value: "dark" as const, label: t.settings.appearance.dark, icon: Moon },
+                { value: "system" as const, label: t.settings.appearance.system, icon: Monitor },
               ].map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}

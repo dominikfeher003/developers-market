@@ -5,19 +5,9 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Zap, ShieldCheck, TrendingUp, Bell, PauseCircle, RotateCcw, Info } from "lucide-react"
 import { timeAgo } from "@/lib/utils"
+import { getPortalT } from "@/lib/i18n/server"
+import { tr } from "@/lib/i18n/en"
 
-const METRIC_LABELS: Record<string, string> = {
-  purchase_roas: "ROAS", spend: "Spend", impressions: "Impressions", clicks: "Clicks",
-  ctr: "CTR", reach: "Reach", frequency: "Frequency", video_views: "Video Views",
-  engagement_rate: "Engagement Rate",
-}
-const OP_LABELS: Record<string, string> = {
-  less_than: "drops below", greater_than: "exceeds", equals: "equals",
-}
-const ACTION_LABELS: Record<string, string> = {
-  pause: "Pause campaign", resume: "Resume campaign",
-  scale_budget: "Scale budget", notify_only: "Send notification",
-}
 const ACTION_VARIANTS: Record<string, "danger" | "success" | "info" | "neutral"> = {
   pause: "danger", resume: "success", scale_budget: "info", notify_only: "neutral",
 }
@@ -33,27 +23,9 @@ const ACTION_ICONS: Record<string, React.ElementType> = {
   scale_budget: TrendingUp,
   notify_only: Bell,
 }
-const RULE_BENEFITS: Record<string, { headline: string; detail: string }> = {
-  pause: {
-    headline: "Protects your budget automatically",
-    detail: "When campaign performance dips below your threshold, this rule steps in before you'd even notice — stopping wasted spend without you needing to check in daily.",
-  },
-  resume: {
-    headline: "Never misses a recovery window",
-    detail: "Paused campaigns can miss optimal moments. This rule re-enables them the moment conditions improve, so your budget is always working when it should be.",
-  },
-  scale_budget: {
-    headline: "Doubles down on what's working",
-    detail: "High-performing periods are short-lived. This rule catches them and increases your daily budget automatically, maximising returns while the signal is strong.",
-  },
-  notify_only: {
-    headline: "Keeps you in control, always informed",
-    detail: "Not every situation calls for automation. This rule alerts your team the moment a threshold is crossed, so a human can decide the best next move.",
-  },
-}
 
 export default async function RulesPage() {
-  const client = await getUserClient()
+  const [client, t] = await Promise.all([getUserClient(), getPortalT()])
   if (!client) redirect("/")
 
   const [allRules, allAlerts] = await Promise.all([readRules(), readAlerts()])
@@ -61,7 +33,11 @@ export default async function RulesPage() {
   const enabled = rules.filter((r) => r.enabled)
   const disabled = rules.filter((r) => !r.enabled)
 
-  // Index last-triggered timestamp per rule
+  const METRIC_LABELS: Record<string, string> = t.rules.metrics
+  const OP_LABELS: Record<string, string> = t.rules.operators
+  const ACTION_LABELS: Record<string, string> = t.rules.actions
+  const RULE_BENEFITS: Record<string, { headline: string; detail: string }> = t.rules.benefits
+
   const lastFiredAt: Record<string, string> = {}
   for (const alert of allAlerts) {
     if (!lastFiredAt[alert.ruleId] || alert.timestamp > lastFiredAt[alert.ruleId]) {
@@ -73,10 +49,10 @@ export default async function RulesPage() {
     return (
       <div className="space-y-6 max-w-7xl">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Automation Rules</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Rules that automatically manage your campaigns</p>
+          <h2 className="text-xl font-bold text-foreground">{t.rules.heading}</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{t.rules.subtitle}</p>
         </div>
-        <EmptyState icon={Zap} title="No rules configured" description="Your account manager will set up automation rules to manage your campaigns automatically." />
+        <EmptyState icon={Zap} title={t.rules.noRules} description={t.rules.noRulesDesc} />
       </div>
     )
   }
@@ -93,7 +69,6 @@ export default async function RulesPage() {
 
     return (
       <div className={`bg-card border border-border border-l-2 ${borderColor} rounded-xl p-5`}>
-        {/* Header */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
             <div className={`w-2 h-2 rounded-full shrink-0 mt-0.5 ${rule.enabled ? "bg-emerald-500" : "bg-zinc-400"}`} />
@@ -102,27 +77,25 @@ export default async function RulesPage() {
           <div className="flex items-center gap-2 shrink-0">
             <StatusBadge variant={actionVariant}>{action}</StatusBadge>
             <StatusBadge variant={rule.enabled ? "success" : "neutral"} dot>
-              {rule.enabled ? "Active" : "Disabled"}
+              {rule.enabled ? t.rules.statusActive : t.rules.statusDisabled}
             </StatusBadge>
           </div>
         </div>
 
-        {/* Condition sentence */}
         <p className="text-sm text-muted-foreground mt-2.5 leading-relaxed">
-          If <span className="text-foreground font-medium">{metric}</span>{" "}
+          {t.rules.if} <span className="text-foreground font-medium">{metric}</span>{" "}
           {op}{" "}
           <span className="text-foreground font-medium">{rule.threshold}</span>{" "}
-          over <span className="text-foreground font-medium">{rule.windowDays} day{rule.windowDays !== 1 ? "s" : ""}</span>
+          {t.rules.over} <span className="text-foreground font-medium">{rule.windowDays} {rule.windowDays !== 1 ? t.rules.days : t.rules.day}</span>
           {rule.appliesTo === "specific" && rule.campaignIds.length > 0
-            ? ` on ${rule.campaignIds.length} campaign${rule.campaignIds.length > 1 ? "s" : ""}`
-            : " on all campaigns"
+            ? ` ${t.rules.on} ${rule.campaignIds.length} ${rule.campaignIds.length > 1 ? t.rules.campaigns : t.rules.campaign}`
+            : ` ${t.rules.onAllCampaigns}`
           }
           {rule.action === "scale_budget" && rule.actionValue != null && (
             <> → <span className="text-foreground font-medium">{rule.actionValue > 0 ? "+" : ""}{rule.actionValue}% budget</span></>
           )}
         </p>
 
-        {/* Benefit block */}
         {benefit && (
           <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border flex gap-2.5">
             <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
@@ -133,40 +106,45 @@ export default async function RulesPage() {
           </div>
         )}
 
-        {/* Footer: last triggered + action icon */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <ActionIcon className="h-3.5 w-3.5" />
             {lastTs
-              ? <span>Last triggered <span className="text-foreground">{timeAgo(lastTs)}</span></span>
-              : <span>Never triggered yet</span>
+              ? <span>{t.rules.lastTriggered} <span className="text-foreground">{timeAgo(lastTs)}</span></span>
+              : <span>{t.rules.neverTriggered}</span>
             }
           </div>
-          {lastTs && (
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-          )}
+          {lastTs && <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />}
         </div>
       </div>
     )
   }
 
+  const rulesCountStr = rules.length === 1
+    ? tr(t.rules.count1, { n: rules.length })
+    : tr(t.rules.countN, { n: rules.length })
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h2 className="text-xl font-bold text-foreground">Automation Rules</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">{rules.length} rule{rules.length !== 1 ? "s" : ""} configured for your account</p>
+        <h2 className="text-xl font-bold text-foreground">{t.rules.heading}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{rulesCountStr}</p>
       </div>
 
       {enabled.length > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active ({enabled.length})</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {tr(t.rules.sectionActive, { n: enabled.length })}
+          </p>
           {enabled.map((r) => <RuleCard key={r.id} rule={r} />)}
         </div>
       )}
 
       {disabled.length > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Disabled ({disabled.length})</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {tr(t.rules.sectionDisabled, { n: disabled.length })}
+          </p>
           {disabled.map((r) => <RuleCard key={r.id} rule={r} />)}
         </div>
       )}
