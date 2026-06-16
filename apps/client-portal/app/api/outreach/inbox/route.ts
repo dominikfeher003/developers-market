@@ -104,6 +104,7 @@ async function writeCache(key: string, data: InboxCache): Promise<void> {
 }
 
 export async function GET(req: NextRequest) {
+  try {
   const client = await getUserClient()
   if (!client) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -235,4 +236,9 @@ export async function GET(req: NextRequest) {
   await writeCache(cacheKey, { fetchedAt, entries })
 
   return NextResponse.json({ entries, fetchedAt, fromCache: false })
+  } catch (outerErr) {
+    const message = outerErr instanceof Error ? outerErr.message : String(outerErr)
+    console.error("[inbox] unhandled error:", message)
+    return NextResponse.json({ error: message, entries: [] }, { status: 500 })
+  }
 }

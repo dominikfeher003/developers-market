@@ -4,7 +4,17 @@ import { useState, useEffect, useCallback } from "react"
 import { Loader2, RefreshCw, Mail, Building2, ChevronDown, ChevronUp } from "lucide-react"
 import { usePortalI18n } from "@/lib/i18n/context"
 import { tr } from "@/lib/i18n/en"
-import type { InboxEntry } from "@/app/api/outreach/inbox/route"
+
+interface InboxEntry {
+  uid: number
+  from: string
+  fromName: string
+  subject: string
+  preview: string
+  body: string
+  receivedAt: string
+  leadCompany: string
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
