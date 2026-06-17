@@ -54,7 +54,6 @@ const PRIORITIES = ["low", "medium", "high", "urgent"] as const
 interface Props {
   initialTickets: Ticket[]
   t: PortalTranslations
-  emptyIcon: React.ComponentType<{ className?: string }>
 }
 
 export function SupportClient({ initialTickets, t }: Props) {

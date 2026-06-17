@@ -1,4 +1,4 @@
-import { MessageSquare, AlertCircle } from "lucide-react"
+import { AlertCircle } from "lucide-react"
 import { getPortalT } from "@/lib/i18n/server"
 import { tr } from "@/lib/i18n/en"
 import { getUserClient } from "@/lib/get-user-client"
@@ -61,7 +61,7 @@ export default async function SupportPage() {
         </div>
       )}
 
-      <SupportClient initialTickets={rows} t={t} emptyIcon={MessageSquare} />
+      <SupportClient initialTickets={rows} t={t} />
     </div>
   )
 }
