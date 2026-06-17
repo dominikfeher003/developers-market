@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, TrendingUp, BookOpen, Bell, Settings, Send, Users, X } from "lucide-react"
+import { LayoutDashboard, TrendingUp, BookOpen, Bell, Settings, Send, Users, X, FileText, FolderKanban, LifeBuoy } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ClientSwitcher } from "./ClientSwitcher"
 import { useSidebar } from "@/lib/sidebar-context"
@@ -14,6 +14,9 @@ const links = [
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/outreach", label: "Outreach", icon: Send },
   { href: "/clients", label: "Clients", icon: Users },
+  { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/support", label: "Support", icon: LifeBuoy },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 

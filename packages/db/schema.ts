@@ -130,3 +130,42 @@ export const kvCache = pgTable("kv_cache", {
   data: jsonb("data").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
+
+export const invoices = pgTable("invoices", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  number: text("number").notNull(),
+  description: text("description").notNull().default(""),
+  amount: integer("amount").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  status: text("status", { enum: ["paid", "pending", "overdue"] }).notNull().default("pending"),
+  issuedAt: date("issued_at").notNull(),
+  dueDate: date("due_date").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const projects = pgTable("projects", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  status: text("status", { enum: ["active", "review", "completed", "on-hold"] }).notNull().default("active"),
+  progress: integer("progress").notNull().default(0),
+  deadline: date("deadline"),
+  tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const supportTickets = pgTable("support_tickets", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  number: text("number").notNull(),
+  title: text("title").notNull(),
+  category: text("category").notNull().default("General"),
+  status: text("status", { enum: ["open", "in-progress", "resolved", "closed"] }).notNull().default("open"),
+  priority: text("priority", { enum: ["low", "medium", "high", "urgent"] }).notNull().default("medium"),
+  messages: jsonb("messages").notNull().default(sql`'[]'::jsonb`),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
