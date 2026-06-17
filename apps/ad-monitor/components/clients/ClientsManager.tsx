@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Plus, Pencil, Trash2, Loader2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Users, X } from "lucide-react"
 import { Client } from "@/lib/types"
+import { useToast } from "@/lib/toast"
 
 type MaskedClient = Omit<Client, "metaAccessToken" | "tiktokAccessToken" | "googleAdsRefreshToken"> & {
   metaAccessToken: string
@@ -55,6 +56,7 @@ export function ClientsManager() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResults, setTestResults] = useState<Record<string, "ok" | "fail">>({})
+  const { addToast } = useToast()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -83,6 +85,7 @@ export function ClientsManager() {
     setAddUserEmail("")
     await loadUsers(clientId)
     setAddingUser(false)
+    addToast(`Portal access granted to ${addUserEmail.trim()}`)
   }
 
   async function removeUser(clientId: string, email: string) {
@@ -92,6 +95,7 @@ export function ClientsManager() {
       body: JSON.stringify({ email }),
     })
     await loadUsers(clientId)
+    addToast(`Portal access removed for ${email}`, "info")
   }
 
   function startAdd() {
@@ -150,9 +154,10 @@ export function ClientsManager() {
           })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        alert(`Save failed (${res.status}): ${err.error ?? "unknown error"}`)
+        addToast(`Save failed: ${err.error ?? "unknown error"}`, "error")
         return
       }
+      addToast(editingId ? "Client updated" : "Client created")
       await load()
       cancelForm()
     } finally {
@@ -161,11 +166,13 @@ export function ClientsManager() {
   }
 
   async function toggleEnabled(client: MaskedClient) {
+    const next = !client.enabled
     await fetch(`/api/clients/${client.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled: !client.enabled }),
+      body: JSON.stringify({ enabled: next }),
     })
+    addToast(`${client.name} ${next ? "enabled" : "disabled"}`, next ? "success" : "info")
     await load()
   }
 
@@ -173,6 +180,7 @@ export function ClientsManager() {
     setDeletingId(id)
     try {
       await fetch(`/api/clients/${id}`, { method: "DELETE" })
+      addToast("Client deleted", "info")
       await load()
     } finally {
       setDeletingId(null)
@@ -184,9 +192,12 @@ export function ClientsManager() {
     try {
       const res = await fetch(`/api/campaigns?clientId=${client.id}&force=1`)
       const data = await res.json()
-      setTestResults((prev) => ({ ...prev, [client.id]: data.campaigns ? "ok" : "fail" }))
+      const ok = !!data.campaigns
+      setTestResults((prev) => ({ ...prev, [client.id]: ok ? "ok" : "fail" }))
+      addToast(ok ? `${client.name}: Meta connection OK` : `${client.name}: connection failed`, ok ? "success" : "error")
     } catch {
       setTestResults((prev) => ({ ...prev, [client.id]: "fail" }))
+      addToast(`${client.name}: connection error`, "error")
     } finally {
       setTestingId(null)
     }

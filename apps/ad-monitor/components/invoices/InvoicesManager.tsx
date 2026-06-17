@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useActiveClient } from "@/lib/client-context"
+import { useToast } from "@/lib/toast"
 
 interface Invoice {
   id: string
@@ -39,6 +40,7 @@ function fmtDate(s: string) {
 
 export function InvoicesManager() {
   const { activeClientId } = useActiveClient()
+  const { addToast } = useToast()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -84,11 +86,13 @@ export function InvoicesManager() {
         await fetch(`/api/invoices/${editingId}`, {
           method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
         })
+        addToast("Invoice updated")
       } else {
         await fetch("/api/invoices", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...form, clientId: activeClientId }),
         })
+        addToast("Invoice created")
       }
       setShowForm(false)
       await load()
@@ -102,6 +106,7 @@ export function InvoicesManager() {
     setDeletingId(id)
     await fetch(`/api/invoices/${id}`, { method: "DELETE" })
     setDeletingId(null)
+    addToast("Invoice deleted", "info")
     await load()
   }
 

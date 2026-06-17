@@ -4,6 +4,7 @@ import "./globals.css"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { ClientProvider } from "@/lib/client-context"
 import { SidebarProvider } from "@/lib/sidebar-context"
+import { ToastProvider } from "@/lib/toast"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -21,12 +22,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${inter.className} bg-background overflow-x-hidden`}>
-        <ClientProvider>
-          <SidebarProvider>
-            <Sidebar />
-            <main className="md:ml-56 min-h-screen">{children}</main>
-          </SidebarProvider>
-        </ClientProvider>
+        <ToastProvider>
+          <ClientProvider>
+            <SidebarProvider>
+              <Sidebar />
+              <main className="md:ml-56 min-h-screen">{children}</main>
+            </SidebarProvider>
+          </ClientProvider>
+        </ToastProvider>
       </body>
     </html>
   )

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Loader2, ChevronLeft, Send, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/lib/toast"
 
 interface TicketMessage {
   role: "client" | "agent"
@@ -45,6 +46,7 @@ function timeAgo(s: string) {
 }
 
 export function SupportManager() {
+  const { addToast } = useToast()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Ticket | null>(null)
@@ -76,6 +78,7 @@ export function SupportManager() {
       setSelected(data.ticket)
       setTickets((prev) => prev.map((t) => t.id === data.ticket.id ? data.ticket : t))
       setReplyText("")
+      addToast("Reply sent")
     } finally { setReplying(false) }
   }
 
@@ -92,6 +95,7 @@ export function SupportManager() {
       const data = await res.json() as { ticket: Ticket }
       setSelected(data.ticket)
       setTickets((prev) => prev.map((t) => t.id === data.ticket.id ? data.ticket : t))
+      addToast(`Status changed to ${status}`, "info")
     } finally { setStatusUpdating(false) }
   }
 

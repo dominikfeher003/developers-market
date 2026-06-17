@@ -19,6 +19,8 @@ export function ClientSwitcher() {
 
   if (clients.length === 0) return null
 
+  const active = clients.find((c) => c.id === activeClientId)
+
   return (
     <div className="px-3 py-2 border-b border-zinc-800">
       <p className="text-xs text-zinc-500 mb-1.5 px-1">Active client</p>
@@ -32,6 +34,35 @@ export function ClientSwitcher() {
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
       </select>
+
+      {active && (
+        <div className="mt-2 space-y-1 px-1">
+          {active.metaAdAccountId && (
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-zinc-500">Meta</span>
+              <span className="text-[10px] text-zinc-400 font-mono truncate max-w-[120px]" title={active.metaAdAccountId}>{active.metaAdAccountId}</span>
+            </div>
+          )}
+          {active.tiktokAdAccountId && (
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-zinc-500">TikTok</span>
+              <span className="text-[10px] text-zinc-400 font-mono truncate max-w-[120px]" title={active.tiktokAdAccountId}>{active.tiktokAdAccountId}</span>
+            </div>
+          )}
+          {active.userEmail && (
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-zinc-500">Portal</span>
+              <span className="text-[10px] text-zinc-400 truncate max-w-[120px]" title={active.userEmail}>{active.userEmail}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-zinc-500">Status</span>
+            <span className={`text-[10px] font-medium ${active.enabled ? "text-emerald-400" : "text-zinc-500"}`}>
+              {active.enabled ? "Active" : "Disabled"}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

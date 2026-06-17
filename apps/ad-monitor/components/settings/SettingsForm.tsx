@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Loader2, Play, StopCircle, CheckCircle2, XCircle, Send } from "lucide-react"
+import { useToast } from "@/lib/toast"
 
 interface SettingsData {
   metaAdAccountId: string
@@ -47,8 +48,7 @@ export function SettingsForm() {
   const [runResult, setRunResult] = useState<string | null>(null)
   const [runLog, setRunLog] = useState<string[]>([])
   const [showRunLog, setShowRunLog] = useState(false)
-  const [toasts, setToasts] = useState<{ id: number; msg: string; ok: boolean }[]>([])
-  const toastCounter = useRef(0)
+  const { addToast } = useToast()
 
   useEffect(() => {
     fetch("/api/settings").then((r) => r.ok ? r.json() : {}).then((data: Partial<SettingsData>) => {
@@ -75,6 +75,7 @@ export function SettingsForm() {
     })
     setSaving(false)
     setSaved(true)
+    addToast("Settings saved")
     setTimeout(() => setSaved(false), 3000)
   }
 
@@ -131,12 +132,6 @@ export function SettingsForm() {
     setPlacesResult({ ok: data.ok, msg: data.msg })
   }
 
-  function showToast(msg: string, ok = true) {
-    const id = ++toastCounter.current
-    setToasts((prev) => [...prev, { id, msg, ok }].slice(-3))
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000)
-  }
-
   async function toggleAgent() {
     const next = !form.agentEnabled
     setForm((f) => ({ ...f, agentEnabled: next }))
@@ -145,7 +140,7 @@ export function SettingsForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, agentEnabled: next }),
     })
-    showToast(next ? "Agent enabled" : "Agent disabled", next)
+    addToast(next ? "Agent enabled" : "Agent disabled", next ? "success" : "info")
   }
 
   async function runAgent() {
@@ -411,21 +406,6 @@ Register-ScheduledTask -TaskName "AdMonitorAgent" -Action $action -Trigger $trig
         {saved && <span className="text-sm text-green-600 flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> Saved</span>}
       </div>
 
-      {toasts.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
-          {toasts.map((t) => (
-            <div
-              key={t.id}
-              className={`flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white ${t.ok ? "bg-zinc-900" : "bg-red-600"}`}
-            >
-              {t.ok
-                ? <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" />
-                : <StopCircle className="h-4 w-4 shrink-0" />}
-              {t.msg}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

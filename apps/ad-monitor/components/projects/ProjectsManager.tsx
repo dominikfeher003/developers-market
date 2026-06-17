@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useActiveClient } from "@/lib/client-context"
+import { useToast } from "@/lib/toast"
 
 interface Project {
   id: string
@@ -31,6 +32,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export function ProjectsManager() {
   const { activeClientId } = useActiveClient()
+  const { addToast } = useToast()
   const [items, setItems] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -70,8 +72,10 @@ export function ProjectsManager() {
     try {
       if (editingId) {
         await fetch(`/api/projects/${editingId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+        addToast("Project updated")
       } else {
         await fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, clientId: activeClientId }) })
+        addToast("Project created")
       }
       setShowForm(false); await load()
     } finally { setSaving(false) }
@@ -81,7 +85,9 @@ export function ProjectsManager() {
     if (!confirm("Delete this project?")) return
     setDeletingId(id)
     await fetch(`/api/projects/${id}`, { method: "DELETE" })
-    setDeletingId(null); await load()
+    setDeletingId(null)
+    addToast("Project deleted", "info")
+    await load()
   }
 
   const inp = (k: keyof FormState, type = "text") => ({
