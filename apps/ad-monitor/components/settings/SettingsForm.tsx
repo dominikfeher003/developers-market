@@ -35,7 +35,7 @@ export function SettingsForm() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string; detail?: string; raw?: string } | null>(null)
   const [testingImap, setTestingImap] = useState(false)
   const [imapResult, setImapResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [testingPlaces, setTestingPlaces] = useState(false)
@@ -86,7 +86,7 @@ export function SettingsForm() {
     const res = await fetch("/api/settings/test-meta", { method: "POST" })
     const data = res.ok ? await res.json() : { ok: false, msg: `Server error ${res.status}` }
     setTesting(false)
-    setTestResult({ ok: data.ok, msg: data.msg })
+    setTestResult({ ok: data.ok, msg: data.msg, detail: data.detail, raw: data.raw })
   }
 
   async function testImap() {
@@ -183,19 +183,30 @@ export function SettingsForm() {
                 {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <p className="text-xs text-zinc-400">Generate at business.facebook.com → Settings → System Users with ads_read + ads_management permissions</p>
+            <p className="text-xs text-zinc-400">
+              Use a System User token: business.facebook.com → Settings → System Users → Generate Token → check <strong>ads_read</strong> + <strong>ads_management</strong>.
+              Then assign the System User to your Ad Account with <strong>Manage campaigns</strong> role.
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="space-y-3">
             <Button variant="outline" onClick={testConnection} disabled={testing} className="gap-1.5">
               {testing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Test Connection
             </Button>
             {testResult && (
-              <div className="flex items-center gap-1.5 text-sm">
-                {testResult.ok
-                  ? <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  : <XCircle className="h-4 w-4 text-red-500" />}
-                <span className={testResult.ok ? "text-green-600" : "text-red-600"}>{testResult.msg}</span>
+              <div className={`rounded-lg border p-3 space-y-2 ${testResult.ok ? "border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20" : "border-red-500/30 bg-red-50 dark:bg-red-950/20"}`}>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {testResult.ok
+                    ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    : <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
+                  <span className={testResult.ok ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}>{testResult.msg}</span>
+                </div>
+                {testResult.detail && (
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans leading-relaxed border-t border-border pt-2 mt-1">{testResult.detail}</pre>
+                )}
+                {testResult.raw && (
+                  <p className="text-[10px] text-muted-foreground font-mono border-t border-border pt-1.5">Raw: {testResult.raw}</p>
+                )}
               </div>
             )}
           </div>
