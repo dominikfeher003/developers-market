@@ -12,6 +12,7 @@
     "@ai-sdk/react": "^3.0.207",
     "@clerk/nextjs": "^7.5.2",
     "@dm/db": "*",
+    "@dm/shared": "*",
     "ai": "^6.0.205",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",

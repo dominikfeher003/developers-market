@@ -1,4 +1,4 @@
-export type { MetricKey, Operator, RuleAction, CampaignStatus, DailyInsight, Campaign, Client, Rule, Alert } from "./shared"
+export type { MetricKey, Operator, RuleAction, CampaignStatus, DailyInsight, Campaign, Client, Rule, Alert } from "@dm/shared"
 
 export interface AccountInfo {
   balance: number

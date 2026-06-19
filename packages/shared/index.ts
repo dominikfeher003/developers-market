@@ -1,5 +1,5 @@
-// Shared types between ad-monitor and client-portal.
-// Each app vendors a copy of this file as lib/shared.ts — do not import this directly from apps.
+// Shared domain types between ad-monitor and client-portal.
+// Published as the @dm/shared workspace package — import from "@dm/shared" (see each app's lib/types.ts).
 
 export type MetricKey =
   | "purchase_roas" | "spend" | "impressions" | "clicks" | "ctr"
@@ -48,6 +48,8 @@ export interface Client {
   metaAccessToken: string
   tiktokAdAccountId?: string
   tiktokAccessToken?: string
+  googleAdsCustomerId?: string
+  googleAdsRefreshToken?: string
   enabled: boolean
   createdAt: string
   userEmail?: string

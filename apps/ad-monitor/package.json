@@ -11,6 +11,7 @@
     "@anthropic-ai/sdk": "^0.104.1",
     "@base-ui/react": "^1.5.0",
     "@dm/db": "*",
+    "@dm/shared": "*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "imapflow": "^1.4.0",
